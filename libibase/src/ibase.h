@@ -19,7 +19,8 @@ extern "C" {
 #define  IB_DOUBLE_TO           128
 #define  IB_DIS_OFF             128
 #define  IB_DIS_TO              160
-#define  IB_IN_MAX              256
+#define  IB_INSET_MAX           4
+#define  IB_IN_MAX              64
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
@@ -417,6 +418,30 @@ typedef struct _FRANGE
     double from;
     double to;
 }FRANGE;
+/* int inset */
+typedef struct  _IINSET
+{
+    short       num;
+    short       field_id;
+    int32_t     set[IB_IN_MAX];
+}IINSET;
+/* long inset*/
+typedef struct  _LINSET
+{
+    short       num;
+    short       field_id;
+    int64_t     set[IB_IN_MAX];
+}LINSET;
+/* float inset */
+typedef struct _FINSET
+{
+    short       num;
+    short       field_id;
+    double      set[IB_IN_MAX];
+}FINSET;
+#define IB_BITFIELDS_FILTER  0x01
+#define IB_BITFIELDS_BLOCK   0x02
+#define IB_INT_BITS_MAX      32
 #define IB_BITFIELDS_FILTER  0x01
 #define IB_BITFIELDS_BLOCK   0x02
 #define IB_INT_BITS_MAX      32
@@ -483,16 +508,13 @@ typedef struct _IQUERY
     short       int_range_count;
     short       long_range_count;
     short       double_range_count;
+    short       int_inset_count;
+    short       long_inset_count;
+    short       double_inset_count;
     short       int_bits_count;
     short       long_bits_count;
     short       status;
     short       nvqterms;
-    short       in_int_num;
-    short       in_int_fieldid;
-    short       in_long_num;
-    short       in_long_fieldid;
-    short       in_double_num;
-    short       in_double_fieldid;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -511,6 +533,9 @@ typedef struct _IQUERY
     IRANGE      int_range_list[IB_INT_INDEX_MAX];
     LRANGE      long_range_list[IB_LONG_INDEX_MAX];
     FRANGE      double_range_list[IB_DOUBLE_INDEX_MAX];
+    IINSET      int_inset_list[IB_INSET_MAX];
+    LINSET      long_inset_list[IB_INSET_MAX];
+    FINSET      double_inset_list[IB_INSET_MAX];
     IBITS       int_bits_list[IB_INT_INDEX_MAX];
     LBITS       long_bits_list[IB_LONG_INDEX_MAX];
     IDISPLAY    display[IB_FIELDS_MAX];
@@ -522,9 +547,6 @@ typedef struct _IQUERY
     int64_t     category_filter;
     int64_t     catblock_filter;
     int64_t     multicat_filter;
-    int32_t     in_int_list[IB_IN_MAX];
-    int64_t     in_long_list[IB_IN_MAX];
-    double      in_double_list[IB_IN_MAX];
 }IQUERY;
 
 /* weight */
