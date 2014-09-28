@@ -491,7 +491,7 @@ void indexd_query_handler(void *args)
                     }
                     if(ret == -1) 
                     {
-                        conn->push_chunk(conn, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
+                        conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
                     }
                 }
             }
@@ -1245,7 +1245,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         if(query->long_inset_list[k].num >= IB_IN_MAX)continue;
                         num = query->long_inset_list[k].num++;
                         query->long_inset_list[k].field_id = field_id;
-                        query->long_inset_list[k].set[num]  = atoi(in_ptr);
+                        query->long_inset_list[k].set[num]  = atoll(in_ptr);
                         while(num > 0 && query->long_inset_list[k].set[num] < query->long_inset_list[k].set[num-1])
                         {
                             xlong = query->long_inset_list[k].set[num-1];
@@ -1265,7 +1265,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         if(query->double_inset_list[k].num >= IB_IN_MAX)continue;
                         num = query->double_inset_list[k].num++;
                         query->double_inset_list[k].field_id = field_id;
-                        query->double_inset_list[k].set[num]  = atoi(in_ptr);
+                        query->double_inset_list[k].set[num]  = atof(in_ptr);
                         while(num > 0 && query->double_inset_list[k].set[num] < query->double_inset_list[k].set[num-1])
                         {
                             xdouble = query->double_inset_list[k].set[num-1];
@@ -1641,7 +1641,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
             }
         }
 err_end:
-        ret = conn->push_chunk(conn, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
+        ret = conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
     }
     return ret;
 }
