@@ -2224,8 +2224,15 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
                     {
                         path[fheader.size] = 0;
                         WARN_LOGGER(hidoc->logger, "reset_dump(%s)", path);
-                        hidoc__set__dump(hidoc, path);
-                        ret = 0;
+                        if(hidoc__set__dump(hidoc, path) > 0)
+						{
+                           ret = 0;
+						}
+						else
+						{
+                           hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
+                           FATAL_LOGGER(hidoc->logger, "reset_dump(%s) failed", path);
+						}
                     }
                     else
                     {
