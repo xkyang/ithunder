@@ -886,8 +886,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
          *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, 
          *geofilter = NULL, *keys = NULL, *keyslist[IB_IDX_MAX], *notlist[IB_IDX_MAX];
+    char *orderby = NULL;
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
-        orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
+        norderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
         xint = 0, op = 0, need_rank = 0, usecs = 0, flag = 0, nkeys = 0, num = 0,new_field_id = 0;
     struct timeval tv = {0};
@@ -926,7 +927,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             catblock = p;
                             break;
                         case E_ARGV_ORDERBY:
-                            orderby = atoi(p);
+                            orderby = p;
+			    norderby = strlen(p);
                             break;
                         case E_ARGV_GROUPBY:
                             query->groupby = atoi(p);
@@ -1306,6 +1308,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         /* order/order by/range */
         if(order < 0) query->flag |= IB_QUERY_RSORT;
         else query->flag |= IB_QUERY_SORT;
+	if(orderby && (norderby > 0) && (norderby < IB_ORDERBY_MAX))
+	{
+	   query->norderby = norderby;
+	   strncpy(query->orderby,orderby,norderby);
+	}
+/*	
         if(orderby >= int_index_from && orderby < int_index_to)
         {
             query->orderby = orderby;
@@ -1318,6 +1326,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         {
             query->orderby = orderby;
         }
+*/	
         /* range */
         if((p = range_filter))
         {

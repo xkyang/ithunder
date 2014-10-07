@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "xmm.h"
 #include "mtree64.h"
+#include "expr.h"
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
@@ -27,8 +28,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
     uint32_t *docs = NULL, docs_size = 0, ndocs = 0;
     double dfrom = 0.0, dto = 0.0, drangefrom = 0.0, drangeto = 0.0,xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, lrangefrom = 0, lrangeto = 0, 
-            doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
-    void *timer = NULL, *topmap = NULL, *groupby = NULL;
+            doc_score = 0, old_score = 0, xdata = 0, xlong = 0, expr_score = 0;
+    void *timer = NULL, *topmap = NULL, *groupby = NULL, *expr = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     IRES *res = NULL;
@@ -60,6 +61,17 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
         double_index_from = ibase->state->double_index_from;
         double_index_to = double_index_from + ibase->state->double_index_fields_num;
         if(topmap == NULL || headers == NULL) goto end;
+	if(query->orderby && query->norderby)
+	{
+           expr = ibase_pop_expr(ibase);
+	   if(expr == NULL) goto end;
+	   if(expr_set(EXPXK(expr),query->orderby,query->norderby) == -1)
+	   {
+	      ibase_push_expr(ibase,expr);
+	      expr = NULL;
+	   }
+	}
+/*	
         fid = query->orderby;
         if(fid >= int_index_from && fid < int_index_to)
         {
@@ -79,6 +91,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             fid += IB_DOUBLE_OFF;
             if(ibase->state->mfields[secid][fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
+*/	
         gid = query->groupby;
         if(gid >= int_index_from && gid < int_index_to)
         {
@@ -543,6 +556,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             if(ignore_rank == 0 && is_sort_reverse && (query->flag & IB_QUERY_RANK)) 
                doc_score += IBLONG((headers[docid].rank*(double)(query->base_rank)));
             //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
+/*	    
             if(is_field_sort && min_set_fid != fid)
             {
                 if(is_field_sort == IB_SORT_BY_INT)
@@ -559,6 +573,12 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     doc_score = IB_LONG_SCORE(xdouble);
                 }
             }
+*/	    
+	    if(expr)
+	    {
+                expr_score = expr_cal(expr,ibase->state,secid,docid);
+                doc_score = expr_score * IB_SCORE_BASE + (int64_t)(doc_score >> 16);
+	    }
             /* group by */
             if(groupby && gid > 0)
             {
@@ -578,7 +598,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                 DEBUG_LOGGER(ibase->logger, "docid:%d/%lld gid:%d key:%lld count:%d", docid, IBLL(headers[docid].globalid), gid, IBLL(xlong), PIMX(groupby)->count);
             }
             /* sorting */
-            if(min_set_fid != fid)
+            //if(min_set_fid != fid)
             {
                 //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
                 if(MTREE64_TOTAL(topmap) >= query->ntop)
@@ -626,7 +646,7 @@ next:
         }
         TIMER_SAMPLE(timer);
         res->sort_time = (int)PT_LU_USEC(timer);
-        if(min_set_fid != fid)
+        //if(min_set_fid != fid)
         {
             if((res->count = MTREE64_TOTAL(topmap)) > 0)
             {
@@ -648,6 +668,7 @@ next:
                 }while(MTREE64_TOTAL(topmap) > 0);
             }
         }
+/*	
         else
         {
             if(is_sort_reverse)
@@ -711,6 +732,7 @@ next:
                 }
             }
         }
+*/	
         if(groupby && (res->ngroups = (PIMX(groupby)->count)) > 0)
         {
             i = 0;
@@ -737,6 +759,7 @@ end:
         if(res) res->doctotal = ibase->state->dtotal;
         if(topmap) ibase_push_stree(ibase, topmap);
         if(groupby) ibase_push_mmx(ibase, groupby);
+        if(expr) ibase_push_expr(ibase, expr);
         TIMER_CLEAN(timer);
     }
     return chunk;

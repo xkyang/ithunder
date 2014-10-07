@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "xmm.h"
 #include "mtree64.h"
+#include "expr.h"
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
@@ -346,9 +347,10 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0, bithit = 0 ,inset_num = 0;
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
-    int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, 
+    int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, expr_score = 0,
             doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
     void *timer = NULL, *topmap = NULL, *fmap = NULL, *groupby = NULL, *index = NULL;
+    void *expr = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     XMAP *xmap = NULL; XNODE *xnode = NULL;
@@ -394,6 +396,17 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         if(topmap == NULL || fmap == NULL || xmap == NULL 
                 || itermlist == NULL || headers == NULL) goto end;
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
+	if(query->orderby && query->norderby)
+	{
+           expr = ibase_pop_expr(ibase);
+	   if(expr == NULL) goto end;
+	   if(expr_set(EXPXK(expr),query->orderby,query->norderby) == -1)
+	   {
+	      ibase_push_expr(ibase,expr);
+	      expr = NULL;
+	   }
+	}
+/*	
         fid = query->orderby;
         if(fid >= int_index_from && fid < int_index_to)
         {
@@ -413,6 +426,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             fid += IB_DOUBLE_OFF;
             if(ibase->state->mfields[secid][fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
+*/	
         gid = query->groupby;
         if(gid >= int_index_from && gid < int_index_to)
         {
@@ -842,6 +856,12 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 IMMX_ADD(groupby, xlong);
                 DEBUG_LOGGER(ibase->logger, "docid:%d/%lld gid:%d key:%lld count:%d", docid, IBLL(headers[docid].globalid), gid, IBLL(xlong), PIMX(groupby)->count);
             }
+	    if(expr)
+	    {
+                expr_score = expr_cal(expr,ibase->state,secid,docid);
+                doc_score = expr_score * IB_SCORE_BASE + (int64_t)(doc_score >> 16);
+	    }
+/*	    
             if(is_field_sort)
             {
                 if(is_field_sort == IB_SORT_BY_INT)
@@ -860,6 +880,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                     doc_score = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[secid][fid], docid));
                 }
             }
+*/	    
             /* sorting */
             if(MTREE64_TOTAL(topmap) >= query->ntop)
             {
@@ -968,6 +989,7 @@ end:
         if(fmap) ibase_push_stree(ibase, fmap);
         if(groupby) ibase_push_mmx(ibase, groupby);
         if(topmap) ibase_push_stree(ibase, topmap);
+        if(expr) ibase_push_expr(ibase, expr);
         TIMER_CLEAN(timer);
     }
     return chunk;

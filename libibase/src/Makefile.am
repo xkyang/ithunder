@@ -29,6 +29,8 @@ utils/xmm.h \
 utils/xmm.c \
 utils/mtree64.h \
 utils/mtree64.c \
+utils/expr.h \
+utils/expr.c \
 utils/zvbcode.c \
 utils/zvbcode.h 
 

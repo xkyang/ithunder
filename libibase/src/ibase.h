@@ -7,6 +7,7 @@ extern "C" {
 #define  IB_ONLINE              0x00
 #define  IB_OFFLINE             0x01
 #define  IB_KEYTERM_MAX         256
+#define  IB_ORDERBY_MAX         64
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
 #endif
@@ -73,6 +74,7 @@ extern "C" {
 #define  IB_XNODE_MAX           10000
 #define  IB_XMAPS_MAX           2048
 #define  IB_STREES_MAX          2048
+#define  IB_EXPR_MAX            2048
 #define  IB_MMX_MAX             2048
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
@@ -502,7 +504,7 @@ typedef struct _IQUERY
     short       ntop;
     short       nqterms;
     short       nquerys;
-    short       orderby;
+    short       norderby;
     short       groupby;
     short       dbid;
     short       int_range_count;
@@ -540,6 +542,7 @@ typedef struct _IQUERY
     LBITS       long_bits_list[IB_LONG_INDEX_MAX];
     IDISPLAY    display[IB_FIELDS_MAX];
     QTERM       qterms[IB_QUERY_MAX];
+    char        orderby[IB_ORDERBY_MAX];
     double      ravgdl;
     int64_t     bitxcat_up;
     int64_t     bitxcat_down;
@@ -717,6 +720,7 @@ typedef struct _IBASE
     int nqiterms;
     int nqxmaps; 
     int nqstrees;
+    int nqexprs;
     int nqmmxs;
     int nqchunks;
     int nsegmentors;
@@ -726,6 +730,7 @@ typedef struct _IBASE
     void *mutex_block;
     void *mutex_iblock;
     void *mutex_stree;
+    void *mutex_expr;
     void *mutex_mmx;
     void *mutex_xmap;
     void *mutex_record;
@@ -738,6 +743,7 @@ typedef struct _IBASE
     IBLOCK *qiblocks[IB_IBLOCKS_MAX];
     ITERM *qiterms[IB_QITERMS_MAX];
     XMAP *qxmaps[IB_XMAPS_MAX];
+    void *qexprs[IB_EXPR_MAX];
     void *qstrees[IB_STREES_MAX];
     void *qmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
@@ -881,6 +887,10 @@ char *ibase_pop_block(IBASE *ibase);
 void ibase_push_stree(IBASE *ibase, void *stree);
 /* ibase pop mtree */
 void *ibase_pop_stree(IBASE *ibase);
+/* push expr */
+void ibase_push_expr(IBASE *ibase, void *expr);
+/* ibase pop expr */
+void *ibase_pop_expr(IBASE *ibase);
 /* pop/push mmx */
 void ibase_push_mmx(IBASE *ibase, void *mmx);
 void *ibase_pop_mmx(IBASE *ibase);

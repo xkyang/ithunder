@@ -17,6 +17,7 @@
 #include "mmtrie.h"
 #include "logger.h"
 #include "mtree64.h"
+#include "expr.h"
 #include "db.h"
 #include "mdb.h"
 #include "xmm.h"
@@ -604,6 +605,59 @@ void *ibase_pop_stree(IBASE *ibase)
         MUTEX_UNLOCK(ibase->mutex_stree);
     }
     return stree;
+}
+
+/* push expr */
+void ibase_push_expr(IBASE *ibase, void *expr)
+{
+    int x = 0;
+
+    if(ibase && expr)
+    {
+        MUTEX_LOCK(ibase->mutex_expr);
+        if(ibase->nqexprs < IB_STREES_MAX)
+        {
+            expr_clean(EXPXK(expr));
+            x = ibase->nqexprs++;
+            ibase->qexprs[x] = expr;
+        }
+        else
+        {
+            expr_close(EXPXK(expr));
+        }
+        MUTEX_UNLOCK(ibase->mutex_expr);
+    }
+    return ;
+}
+
+/* ibase pop expr */
+void *ibase_pop_expr(IBASE *ibase)
+{
+    void *expr = NULL;
+    int x = 0;
+
+    if(ibase)
+    {
+        MUTEX_LOCK(ibase->mutex_expr);
+        if(ibase->nqexprs > 0)
+        {
+            x = --(ibase->nqexprs);
+            expr = ibase->qexprs[x];
+            ibase->qexprs[x] = NULL;
+        }
+        else
+        {
+            expr = expr_init();
+	    expr_int_range(EXPXK(expr),ibase->state->int_index_from,
+			   ibase->state->int_index_from + ibase->state->int_index_fields_num);
+	    expr_long_range(EXPXK(expr),ibase->state->long_index_from,
+			 ibase->state->long_index_from + ibase->state->long_index_fields_num);
+	    expr_double_range(EXPXK(expr),ibase->state->long_index_from,
+		       ibase->state->double_index_from + ibase->state->long_index_fields_num);
+        }
+        MUTEX_UNLOCK(ibase->mutex_expr);
+    }
+    return expr;
 }
 
 /* push iterm */
@@ -1666,6 +1720,7 @@ void ibase_clean(IBASE *ibase)
         MUTEX_DESTROY(ibase->mutex_block);
         MUTEX_DESTROY(ibase->mutex_iblock);
         MUTEX_DESTROY(ibase->mutex_stree);
+        MUTEX_DESTROY(ibase->mutex_expr);
         MUTEX_DESTROY(ibase->mutex_mmx);
         MUTEX_DESTROY(ibase->mutex_xmap);
         MUTEX_DESTROY(ibase->mutex_record);
@@ -1692,6 +1747,7 @@ IBASE *ibase_init()
         MUTEX_INIT(ibase->mutex_block);
         MUTEX_INIT(ibase->mutex_iblock);
         MUTEX_INIT(ibase->mutex_stree);
+        MUTEX_INIT(ibase->mutex_expr);
         MUTEX_INIT(ibase->mutex_mmx);
         MUTEX_INIT(ibase->mutex_xmap);
         MUTEX_INIT(ibase->mutex_record);
