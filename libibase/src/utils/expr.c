@@ -53,9 +53,9 @@ void expr__print__range(EXPR *expr)
 {
    if(expr)
    {
-      fprintf(stderr,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
-      fprintf(stderr,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
-      fprintf(stderr,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
+      fprintf(stdout,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
+      fprintf(stdout,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
+      fprintf(stdout,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
    }
 }
 
@@ -75,7 +75,7 @@ void expr_print(EXPR *expr)
       int i = 0;
       for(;i<expr->num;++i)
       {
-         fprintf(stderr,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
+         fprintf(stdout,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
 			expr->list[i].opnd,expr->list[i].optr);
       }
    }
@@ -260,7 +260,7 @@ int64_t expr__operate(EXPR* expr,IBSTATE* state,int i,int secid,int docid)
    	   break;
        }
 #ifdef EXPR_DEBUG
-       fprintf(stderr,"i:%d field:%d fid:%d opnd:%d optr:%c value:%ld result:%ld in secid:%d docid:%d\n",i,field,fid,e->opnd,e->optr,value,ret,secid,docid);
+       fprintf(stdout,"i:%d field:%d fid:%d opnd:%d optr:%c value:%ld result:%ld in secid:%d docid:%d\n",i,field,fid,e->opnd,e->optr,value,ret,secid,docid);
 #endif
     }
     return ret;
@@ -333,7 +333,7 @@ int64_t expr__test__cal(EXPR *expr)
 	 value = expr__test__operate(&(expr->list[i]));
 	 ret += value;
 #ifdef EXPR_DEBUG
-         fprintf(stderr,"i:%d field:%d opnd:%d optr:%c value:%ld result:%ld\n",i,
+         fprintf(stdout,"i:%d field:%d opnd:%d optr:%c value:%ld result:%ld\n",i,
 			expr->list[i].field,expr->list[i].opnd,expr->list[i].optr,value,ret);
 #endif	       
       }

@@ -652,8 +652,8 @@ void *ibase_pop_expr(IBASE *ibase)
 			   ibase->state->int_index_from + ibase->state->int_index_fields_num);
 	    expr_long_range(EXPXK(expr),ibase->state->long_index_from,
 			 ibase->state->long_index_from + ibase->state->long_index_fields_num);
-	    expr_double_range(EXPXK(expr),ibase->state->long_index_from,
-		       ibase->state->double_index_from + ibase->state->long_index_fields_num);
+	    expr_double_range(EXPXK(expr),ibase->state->double_index_from,
+		       ibase->state->double_index_from + ibase->state->double_index_fields_num);
         }
         MUTEX_UNLOCK(ibase->mutex_expr);
     }

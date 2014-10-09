@@ -859,7 +859,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 	    if(expr)
 	    {
                 expr_score = expr_cal(expr,ibase->state,secid,docid);
-                doc_score = expr_score * IB_SCORE_BASE + (int64_t)(doc_score >> 16);
+                doc_score = expr_score * IB_INT_BASE + (int64_t)(doc_score >> 6);
 	    }
 /*	    
             if(is_field_sort)
