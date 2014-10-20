@@ -222,7 +222,7 @@ int expr_set(EXPR *expr, const char* str, int len)
     return ret;
 }
 
-int64_t expr__time__refresh(long refresh_at,long post_at)
+int64_t expr__time__refresh(long post_at,long refresh_at)
 {
     long now = (long)time(NULL);
     struct tm tm_begin;
