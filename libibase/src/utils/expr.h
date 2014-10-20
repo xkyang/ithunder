@@ -18,6 +18,7 @@ typedef struct _PAIR
 typedef struct _EXPR
 {
     int num;
+	int condition;
     PAIR int_range;
     PAIR long_range;
     PAIR double_range;
