@@ -9,6 +9,7 @@
 #include "dmap.h"
 
 #define EXPR_DEBUG 1
+#define TIME_REFRESH_SHIFT 5
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
 #define ISSIGN(p) ((*p == ' ' || *p == '\t' || *p == '\n'))
 #define ISOPND(p) ((*p == '-') || (*p >= '0' && *p <= '9'))
@@ -238,9 +239,9 @@ int64_t expr__time__refresh(long post_at,long refresh_at)
     }
     long new_time = (day_begin > old_time) ? day_begin : old_time;
 #ifdef EXPR_DEBUG
-    fprintf(stdout, "TIME:now:%ld day_begin:%ld refresh_at:%ld post_at:%ld new_time:%ld\n", now,day_begin,refresh_at,post_at,new_time);
+    fprintf(stdout, "TIME:now:%ld post_at:%ld max(day_begin:%ld old_time:%ld refresh_at:%ld) = new_time:%ld\n", now,post_at,day_begin,old_time,refresh_at,new_time);
 #endif	       
-    return new_time;
+    return new_time << TIME_REFRESH_SHIFT;
 }
 
 int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid)
@@ -252,7 +253,7 @@ int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid
        if((field >= expr->int_range.from) && (field < expr->int_range.to))
        {
 	      fid = field - expr->int_range.from + IB_INT_OFF;
-          value = (int64_t)(IMAP_GET(state->mfields[secid][fid], docid));
+          value = IB_LONG_INT(IMAP_GET(state->mfields[secid][fid], docid));
        } 
        else if((field >= expr->long_range.from) && (field < expr->long_range.to))
        {
@@ -262,7 +263,7 @@ int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid
        else if((field >= expr->double_range.from) && (field < expr->double_range.to))
        {
 	      fid = field - expr->double_range.from + IB_DOUBLE_OFF;
-          value = (int64_t)(DMAP_GET(state->mfields[secid][field], docid));
+          value = IB_LONG_SCORE(DMAP_GET(state->mfields[secid][fid], docid));
        } 
 	}
 #ifdef EXPR_DEBUG
