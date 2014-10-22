@@ -21,7 +21,7 @@ extern "C" {
 #define  IB_DIS_OFF             128
 #define  IB_DIS_TO              160
 #define  IB_INSET_MAX           4
-#define  IB_IN_MAX              64
+#define  IB_IN_MAX              512
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
