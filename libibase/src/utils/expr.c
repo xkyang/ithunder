@@ -8,7 +8,7 @@
 #include "lmap.h"
 #include "dmap.h"
 
-#define EXPR_DEBUG 1
+//#define EXPR_DEBUG 1
 #define TIME_REFRESH_SHIFT 5
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
 #define ISSIGN(p) ((*p == ' ' || *p == '\t' || *p == '\n'))
