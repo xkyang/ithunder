@@ -648,12 +648,14 @@ void *ibase_pop_expr(IBASE *ibase)
         else
         {
             expr = expr_init();
-	    expr_int_range(EXPXK(expr),ibase->state->int_index_from,
+	        expr_set_logger(EXPXK(expr),ibase->logger);
+	        expr_int_range(EXPXK(expr),ibase->state->int_index_from,
 			   ibase->state->int_index_from + ibase->state->int_index_fields_num);
-	    expr_long_range(EXPXK(expr),ibase->state->long_index_from,
+	        expr_long_range(EXPXK(expr),ibase->state->long_index_from,
 			 ibase->state->long_index_from + ibase->state->long_index_fields_num);
-	    expr_double_range(EXPXK(expr),ibase->state->double_index_from,
+	        expr_double_range(EXPXK(expr),ibase->state->double_index_from,
 		       ibase->state->double_index_from + ibase->state->double_index_fields_num);
+	        expr_print_range(EXPXK(expr));
         }
         MUTEX_UNLOCK(ibase->mutex_expr);
     }

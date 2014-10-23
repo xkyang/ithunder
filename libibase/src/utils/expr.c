@@ -7,8 +7,9 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "logger.h"
 
-//#define EXPR_DEBUG 1
+//#defind EXPR_DEBUG 1
 #define TIME_REFRESH_SHIFT 5
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
 #define ISSIGN(p) ((*p == ' ' || *p == '\t' || *p == '\n'))
@@ -22,6 +23,14 @@ EXPR *expr_init()
        memset(expr,0,sizeof(EXPR));
     }
     return expr;
+}
+
+void expr_set_logger(EXPR *expr,void* logger)
+{
+    if(expr)
+	{
+	   expr->logger = logger;
+	}
 }
 
 void expr_int_range(EXPR *expr,int from,int to)
@@ -51,13 +60,13 @@ void expr_double_range(EXPR *expr,int from,int to)
    }
 }
 
-void expr__print__range(EXPR *expr)
+void expr_print_range(EXPR *expr)
 {
    if(expr)
    {
-      fprintf(stdout,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
-      fprintf(stdout,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
-      fprintf(stdout,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
+      ACCESS_LOGGER(expr->logger,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
+      ACCESS_LOGGER(expr->logger,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
+      ACCESS_LOGGER(expr->logger,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
    }
 }
 
@@ -77,7 +86,7 @@ void expr_print(EXPR *expr)
       int i = 0;
       for(;i<expr->num;++i)
       {
-         fprintf(stdout,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
+         ACCESS_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
 			expr->list[i].opnd,expr->list[i].optr);
       }
    }
@@ -113,9 +122,7 @@ int expr_set(EXPR *expr, const char* str, int len)
     int ret = -1, k = -1, field = 0, opnd = 0, optr = 0;
     if(expr && str && (len > 0))
     {
-#ifdef EXPR_DEBUG
-        fprintf(stdout, "DEBUG:[%s] for expr_set\n", str);
-#endif	       
+        ACCESS_LOGGER(expr->logger, "DEBUG:[%s] for expr_set\n", str);
         const char* p = str;
 	    while(*p!='\0')
 	    {
@@ -140,19 +147,15 @@ int expr_set(EXPR *expr, const char* str, int len)
 			             if((field >= expr->double_range.from) && 
 			                (field < expr->double_range.to))
 			             {
-#ifdef EXPR_DEBUG
-                            fprintf(stdout, "ERROR:[%s] for double[%d:%d] shift\n", str,
+                            ACCESS_LOGGER(expr->logger, "ERROR:[%s] for double[%d:%d] shift\n", str,
 		                    expr->double_range.from,expr->double_range.to);
-#endif	       
                              return -1;
 			             }
                          ++p;
                        }
                        else //wrong expression
                        {
-#ifdef EXPR_DEBUG
-                          fprintf(stdout, "ERROR:[%s] for shift\n", str);
-#endif	       
+                          ACCESS_LOGGER(expr->logger, "ERROR:[%s] for shift\n", str);
                           return -1;
                        }
                     }
@@ -164,9 +167,7 @@ int expr_set(EXPR *expr, const char* str, int len)
                     }
 		            if(((optr == '/') || (optr == '%')) && (opnd == 0))
 		            {
-#ifdef EXPR_DEBUG
-                       fprintf(stdout, "ERROR:[%s] for divide 0\n", str);
-#endif	       
+                       ACCESS_LOGGER(expr->logger, "ERROR:[%s] for divide 0\n", str);
 		               return -1;
 		            }
 	                while((*p!='\0')&&(!ISOPTR(p)))++p;
@@ -174,9 +175,7 @@ int expr_set(EXPR *expr, const char* str, int len)
 	                {
                        if(*p != '+') //wrong expression
 	                   {
-#ifdef EXPR_DEBUG
-                          fprintf(stdout, "ERROR:[%s] for concat(+):%c\n", str,*p);
-#endif	       
+                          ACCESS_LOGGER(expr->logger, "ERROR:[%s] for concat(+):%c\n", str,*p);
 	                      return -1;
 	                   }
 	                   else
@@ -189,18 +188,12 @@ int expr_set(EXPR *expr, const char* str, int len)
 	     }
 	     if(expr__field__valid(expr,field) == 0)
 	     {
-#ifdef EXPR_DEBUG
-	       expr__print__range(expr);
-           fprintf(stdout, "ERROR:[%d] is wrong range\n", field);
-#endif	       
+           ACCESS_LOGGER(expr->logger, "ERROR:[%d] is wrong range\n", field);
 	       return -1;
 	     }
 	     if((optr == '@') && (expr__field__valid(expr,opnd) == 0)) //时间刷新
 	     {
-#ifdef EXPR_DEBUG
-	       expr__print__range(expr);
-           fprintf(stdout, "ERROR:time refresh [%d] is wrong range\n", opnd);
-#endif	       
+           ACCESS_LOGGER(expr->logger, "ERROR:time refresh [%d] is wrong range\n", opnd);
 	       return -1;
 	     }
 	     if(expr->num < EXPR_ELEM_MAX)
@@ -212,9 +205,7 @@ int expr_set(EXPR *expr, const char* str, int len)
 	     }
 	     else
 	     {
-#ifdef EXPR_DEBUG
-               fprintf(stdout, "WARNING:expr num is much more field:%d\n", field);
-#endif	       
+           ACCESS_LOGGER(expr->logger, "WARNING:expr num is much more field:%d\n", field);
 	       break;
 	    }
 	  }
@@ -223,7 +214,7 @@ int expr_set(EXPR *expr, const char* str, int len)
     return ret;
 }
 
-int64_t expr__time__refresh(long post_at,long refresh_at)
+int64_t expr__time__refresh(EXPR* expr,long post_at,long refresh_at)
 {
     long now = (long)time(NULL);
     struct tm tm_begin;
@@ -238,9 +229,10 @@ int64_t expr__time__refresh(long post_at,long refresh_at)
        old_time = refresh_at;
     }
     long new_time = (day_begin > old_time) ? day_begin : old_time;
-#ifdef EXPR_DEBUG
-    fprintf(stdout, "TIME:now:%ld post_at:%ld max(day_begin:%ld old_time:%ld refresh_at:%ld) = new_time:%ld\n", now,post_at,day_begin,old_time,refresh_at,new_time);
-#endif	       
+	if(expr)
+	{
+       ACCESS_LOGGER(expr->logger, "TIME:now:%ld post_at:%ld max(day_begin:%ld old_time:%ld refresh_at:%ld) = new_time:%ld\n", now,post_at,day_begin,old_time,refresh_at,new_time);
+	}
     return new_time << TIME_REFRESH_SHIFT;
 }
 
@@ -266,9 +258,7 @@ int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid
           value = IB_LONG_SCORE(DMAP_GET(state->mfields[secid][fid], docid));
        } 
 	}
-#ifdef EXPR_DEBUG
-       fprintf(stdout,"field:%d fid:%d value:%ld in secid:%d docid:%d\n",field,fid,value,secid,docid);
-#endif
+    ACCESS_LOGGER(expr->logger,"field:%d fid:%d value:%ld in secid:%d docid:%d\n",field,fid,value,secid,docid);
 	return value;
 }
 
@@ -343,7 +333,7 @@ int64_t expr__operate(EXPR* expr,IBSTATE* state,int i,int secid,int docid)
 			else
 			{
 	           value2 = expr__map__value(expr,state,e->opnd,secid,docid);
-   	           ret = expr__time__refresh(value,value2); 
+   	           ret = expr__time__refresh(expr,value,value2); 
 			   --(expr->condition);
 			}
    	        break;
@@ -351,9 +341,7 @@ int64_t expr__operate(EXPR* expr,IBSTATE* state,int i,int secid,int docid)
    	        ret = value; 
    	   break;
        }
-#ifdef EXPR_DEBUG
-       fprintf(stdout,"i:%d field:%d opnd:%d optr:%c value/2:%ld/%ld result:%ld in secid:%d docid:%d\n",i,field,e->opnd,e->optr,value,value2,ret,secid,docid);
-#endif
+       ACCESS_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c value/2:%ld/%ld result:%ld in secid:%d docid:%d\n",i,field,e->opnd,e->optr,value,value2,ret,secid,docid);
     }
     return ret;
 }
@@ -414,9 +402,7 @@ int64_t expr_cal(EXPR *expr,IBSTATE* state,int secid,int docid)
  	        ret += expr__operate(expr,state,i,secid,docid);
         }
     }
-#ifdef EXPR_DEBUG
-    fprintf(stdout, "expr_cal result:%ld\n", ret);
-#endif
+    ACCESS_LOGGER(expr->logger, "expr_cal result:%ld\n", ret);
     return ret;
 }
 
@@ -525,7 +511,7 @@ int64_t expr__test__operate(EXPR* expr,ELEM* e)
 		     }
 			 else
 			 {
-    	        ret = expr__time__refresh(e->field, e->opnd); 
+    	        ret = expr__time__refresh(expr,e->field, e->opnd); 
 			    --(expr->condition);
 			 }
     	     break;
@@ -560,6 +546,16 @@ int64_t expr__test__cal(EXPR *expr)
       }
     }
     return ret;
+}
+
+void expr__print__range(EXPR *expr)
+{
+   if(expr)
+   {
+      fprintf(stdout,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
+      fprintf(stdout,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
+      fprintf(stdout,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
+   }
 }
 
 #ifdef EXPR_TEST

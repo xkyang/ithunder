@@ -23,6 +23,7 @@ typedef struct _EXPR
     PAIR long_range;
     PAIR double_range;
     ELEM list[EXPR_ELEM_MAX];
+	void* logger;
 }EXPR;
 #define EXPXK(x) ((EXPR *)x)
 EXPR *expr_init();
@@ -31,6 +32,8 @@ int64_t expr_cal(EXPR *expr,IBSTATE* state,int secid,int docid);
 void expr_int_range(EXPR *expr,int from,int to);
 void expr_long_range(EXPR *expr,int from,int to);
 void expr_double_range(EXPR *expr,int from,int to);
+void expr_print_range(EXPR *expr);
+void expr_set_logger(EXPR *expr,void* logger);
 void expr_print(EXPR *expr);
 void expr_clean(EXPR *expr);
 void expr_close(EXPR *expr);
