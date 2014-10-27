@@ -328,7 +328,7 @@ int64_t expr__operate(EXPR* expr,IBSTATE* state,int i,int secid,int docid)
           case '@': //时间刷新
 			if(0 == expr->condition)
 			{
-   	           ret = value; 
+   	           ret = expr__map__value(expr,state,e->opnd,secid,docid);
 			}
 			else
 			{
@@ -507,7 +507,7 @@ int64_t expr__test__operate(EXPR* expr,ELEM* e)
            case '@': //时间更新
 		     if(0 == expr->condition)
 		     {
-    	        ret = (int64_t)e->field;
+    	        ret = (int64_t)e->opnd;
 		     }
 			 else
 			 {
