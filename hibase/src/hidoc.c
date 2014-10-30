@@ -2191,6 +2191,7 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
             //FATAL_LOGGER(hidoc->logger, "Invalid offset:%lld file_size:%lld", (long long)hidoc->state->dump_offset, (long long)st.st_size);
             goto end;
         }
+		memset(&fheader,0,sizeof(FHEADER));
         if(lseek(hidoc->dumpfd,  (off_t)hidoc->state->dump_offset, 
                     SEEK_SET) == hidoc->state->dump_offset 
                 && (n = read(hidoc->dumpfd, &fheader, sizeof(FHEADER))) == sizeof(FHEADER))
@@ -2241,6 +2242,13 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
                 }
                 else
                 {
+					if(fheader.size > HI_DOCBLOCK_MAX)
+					{
+                        ret = -1;
+                        hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
+                        WARN_LOGGER(hidoc->logger, "read fd:%d data:%p offset:%lld id:%lld size:%d/%d failed, %s", hidoc->dumpfd, data, LL64(hidoc->state->dump_offset), LL64(fheader.globalid), fheader.size, ret, strerror(errno));
+                        goto end;
+					}
                     REALLOC(hindex->data, hindex->ndata, (fheader.size+1));
                     //REMALLOC(hidoc->data, hidoc->ndata, fheader.size, hidoc->logger);
                     ret = 0;
