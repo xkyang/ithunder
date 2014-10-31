@@ -322,14 +322,21 @@ int dmap_find_slot(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+					if(key > dmap->slots[x].max)
+					{
+					   ret = x + 1;
+					}
+					else
+					{
+                       ret = x;
+					}
                     break;
                 }
                 if(key > dmap->slots[x].min)
                 {
                    if(key > dmap->slots[x].max)
                    {
-                       min = x;
+                       ret = min = x + 1;
                    }
                    else
                    {
@@ -339,10 +346,9 @@ int dmap_find_slot(DMAP *dmap, double key)
                 }
                 else if(key == dmap->slots[x].min)
                 {
-                   if(key >= dmap->slots[x-1].max)
+                   if(key <= dmap->slots[x-1].max)
                    {
-                      ret = x - 1;
-                      break;
+                      ret = max = x - 1;
                    }
                    else
                    {
@@ -352,7 +358,7 @@ int dmap_find_slot(DMAP *dmap, double key)
                 }
                 else//key < dmap->slots[x].min
                 {
-                   max = x;
+                   ret = max = x - 1;
                 }
             }
         }
@@ -376,14 +382,21 @@ int dmap_find_slot2(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+					if(key < dmap->slots[x].min)
+					{
+					   ret = x -1;
+					}
+					else
+					{
+                       ret = x;
+					}
                     break;
                 }
                 if(key < dmap->slots[x].max)
                 {
                     if(key < dmap->slots[x].min)
                     {
-                       max = x;
+                       ret = max = x - 1;
                     }
                     else
                     {
@@ -400,13 +413,12 @@ int dmap_find_slot2(DMAP *dmap, double key)
                    }
                    else
                    {
-                      ret = x + 1;
-                      break;
+                      ret = min = x + 1;
                    }
                 }
                 else//key > dmap->slots[x].max
                 {
-                   min = x;
+                   ret = min = x + 1;
                 }
             }
         }
@@ -434,7 +446,10 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
               x = (min + max) / 2;
               if(x == min)
               {
-                  if(kvs[x].key >= key) ret = x;
+                  if(kvs[x].key >= key)
+				  { 
+					  ret = x;
+				  }
                   break;
               }
               if(key ==  kvs[x].key)
@@ -444,13 +459,11 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
               }
               else if(key > kvs[x].key)
               {  
-                  min = x;
-                  ret = x + 1;
+                  ret = min = x + 1;
               }
               else
               {
-                 max = x;
-                 ret = x;
+                 ret = max = x - 1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -486,7 +499,10 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
               x = (min + max) / 2;
               if(x == min)
               {
-                   if(kvs[x].key <= key) ret = x;
+                   if(kvs[x].key <= key)
+				   {
+					   ret = x;
+				   }
                    break;
               }
               if(key ==  kvs[x].key)
@@ -496,13 +512,11 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
               }
               else if(key > kvs[x].key)
               {
-                 min = x;
-                 ret = x;
+                 ret = min = x + 1;
               }
               else
               {
-                 max = x;
-                 ret = x - 1;
+                 ret = max = x -1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -603,7 +617,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
                 kvs = dmap->map + dmap->slots[k].nodeid;
                 for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
-            for(j = i+1; j < kk; j++)
+            for(j = k+1; j < kk; j++)
             {
                 ret += dmap->slots[j].count;
                 if(list)

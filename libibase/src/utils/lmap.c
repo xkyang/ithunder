@@ -322,14 +322,21 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+					if(key > lmap->slots[x].max)
+					{
+					   ret = x + 1;
+					}
+					else
+					{
+                       ret = x;
+					}
                     break;
                 }
                 if(key > lmap->slots[x].min)
                 {
                    if(key > lmap->slots[x].max)
                    {
-                       min = x;
+                       ret = min = x + 1;
                    }
                    else
                    {
@@ -339,10 +346,9 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
                 }
                 else if(key == lmap->slots[x].min)
                 {
-                   if(key >= lmap->slots[x-1].max)
+                   if(key <= lmap->slots[x-1].max)
                    {
-                      ret = x - 1;
-                      break;
+                      ret = max = x - 1;
                    }
                    else
                    {
@@ -352,7 +358,7 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
                 }
                 else//key < lmap->slots[x].min
                 {
-                   max = x;
+                   ret = max = x - 1;
                 }
             }
         }
@@ -376,14 +382,21 @@ int lmap_find_slot2(LMAP *lmap, int64_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+					if(key < lmap->slots[x].min)
+					{
+					   ret = x -1;
+					}
+					else
+					{
+                       ret = x;
+					}
                     break;
                 }
                 if(key < lmap->slots[x].max)
                 {
                     if(key < lmap->slots[x].min)
                     {
-                       max = x;
+                       ret = max = x - 1;
                     }
                     else
                     {
@@ -400,13 +413,12 @@ int lmap_find_slot2(LMAP *lmap, int64_t key)
                    }
                    else
                    {
-                      ret = x + 1;
-                      break;
+                      ret = min = x + 1;
                    }
                 }
                 else//key > lmap->slots[x].max
                 {
-                   min = x;
+                   ret = min = x + 1;
                 }
             }
         }
@@ -434,7 +446,10 @@ int lmap_find_kv(LMAP *lmap, int k, int64_t key)
               x = (min + max) / 2;
               if(x == min)
               {
-                  if(kvs[x].key >= key) ret = x;
+                  if(kvs[x].key >= key)
+				  { 
+					  ret = x;
+				  }
                   break;
               }
               if(key ==  kvs[x].key)
@@ -444,13 +459,11 @@ int lmap_find_kv(LMAP *lmap, int k, int64_t key)
               }
               else if(key > kvs[x].key)
               {  
-                  min = x;
-                  ret = x + 1;
+                  ret = min = x + 1;
               }
               else
               {
-                 max = x;
-                 ret = x;
+                 ret = max = x - 1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -486,7 +499,10 @@ int lmap_find_kv2(LMAP *lmap, int k, int64_t key)
               x = (min + max) / 2;
               if(x == min)
               {
-                   if(kvs[x].key <= key) ret = x;
+                   if(kvs[x].key <= key)
+				   {
+					   ret = x;
+				   }
                    break;
               }
               if(key ==  kvs[x].key)
@@ -496,13 +512,11 @@ int lmap_find_kv2(LMAP *lmap, int k, int64_t key)
               }
               else if(key > kvs[x].key)
               {
-                 min = x;
-                 ret = x;
+                 ret = min = x + 1;
               }
               else
               {
-                 max = x;
-                 ret = x - 1;
+                 ret = max = x -1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -603,7 +617,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
                 kvs = lmap->map + lmap->slots[k].nodeid;
                 for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
-            for(j = i+1; j < kk; j++)
+            for(j = k+1; j < kk; j++)
             {
                 ret += lmap->slots[j].count;
                 if(list)
