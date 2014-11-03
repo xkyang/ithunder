@@ -361,6 +361,13 @@ int imap_find_slot(IMAP *imap, int32_t key)
                    ret = max = x - 1;
                 }
             }
+			if((x = ret)>= 0 && x < n)
+		    {
+		        while(x >= 0 && key <= imap->slots[x].max)
+		        {
+		           ret = x--;
+				}
+		    }
         }
     }
     return ret;
@@ -384,7 +391,7 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                 {
 					if(key < imap->slots[x].min)
 					{
-					   ret = x -1;
+					   ret = x - 1;
 					}
 					else
 					{
@@ -421,6 +428,13 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                    ret = min = x + 1;
                 }
             }
+			if((x = ret) >= 0 && x < n)
+		    {
+		       while(x < n && key >= imap->slots[x].min) 
+		       {
+		            ret = x++;
+		       }
+		    }
         }
     }
     return ret;
@@ -516,7 +530,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
               }
               else
               {
-                 ret = max = x -1;
+                 ret = max = x - 1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -569,7 +583,7 @@ int imap_in(IMAP *imap, int32_t key, u32_t *list)
                     }
                 }
             }
-            i=0;
+            i = 0;
         }while(++k < n && imap->slots[k].min == key);
         RWLOCK_UNLOCK(imap->rwlock);
     }

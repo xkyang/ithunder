@@ -361,6 +361,13 @@ int dmap_find_slot(DMAP *dmap, double key)
                    ret = max = x - 1;
                 }
             }
+			if((x = ret)>= 0 && x < n)
+		    {
+		        while(x >= 0 && key <= dmap->slots[x].max)
+		        {
+		           ret = x--;
+				}
+		    }
         }
     }
     return ret;
@@ -384,7 +391,7 @@ int dmap_find_slot2(DMAP *dmap, double key)
                 {
 					if(key < dmap->slots[x].min)
 					{
-					   ret = x -1;
+					   ret = x - 1;
 					}
 					else
 					{
@@ -421,6 +428,13 @@ int dmap_find_slot2(DMAP *dmap, double key)
                    ret = min = x + 1;
                 }
             }
+			if((x = ret) >= 0 && x < n)
+		    {
+		       while(x < n && key >= dmap->slots[x].min) 
+		       {
+		            ret = x++;
+		       }
+		    }
         }
     }
     return ret;
@@ -516,7 +530,7 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
               }
               else
               {
-                 ret = max = x -1;
+                 ret = max = x - 1;
               }
            }
            if((x = ret) >= 0 && x < n)
@@ -569,7 +583,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
                     }
                 }
             }
-            i=0;
+            i = 0;
         }while(++k < n && dmap->slots[k].min == key);
         RWLOCK_UNLOCK(dmap->rwlock);
     }
