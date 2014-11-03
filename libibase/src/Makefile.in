@@ -127,7 +127,7 @@ am_libibase_la_OBJECTS = libibase_la-ibase.lo libibase_la-index.lo \
 	libibase_la-mmtrie.lo libibase_la-db.lo libibase_la-mdb.lo \
 	libibase_la-imap.lo libibase_la-lmap.lo libibase_la-dmap.lo \
 	libibase_la-immx.lo libibase_la-xmm.lo libibase_la-mtree64.lo \
-	libibase_la-zvbcode.lo
+	libibase_la-expr.lo libibase_la-zvbcode.lo
 libibase_la_OBJECTS = $(am_libibase_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -343,6 +343,8 @@ utils/xmm.h \
 utils/xmm.c \
 utils/mtree64.h \
 utils/mtree64.c \
+utils/expr.h \
+utils/expr.c \
 utils/zvbcode.c \
 utils/zvbcode.h 
 
@@ -431,6 +433,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-bquery.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-dmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-expr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-ibase.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-imap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-immx.Plo@am__quote@
@@ -570,6 +573,13 @@ libibase_la-mtree64.lo: utils/mtree64.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/mtree64.c' object='libibase_la-mtree64.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-mtree64.lo `test -f 'utils/mtree64.c' || echo '$(srcdir)/'`utils/mtree64.c
+
+libibase_la-expr.lo: utils/expr.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-expr.lo -MD -MP -MF $(DEPDIR)/libibase_la-expr.Tpo -c -o libibase_la-expr.lo `test -f 'utils/expr.c' || echo '$(srcdir)/'`utils/expr.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libibase_la-expr.Tpo $(DEPDIR)/libibase_la-expr.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/expr.c' object='libibase_la-expr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-expr.lo `test -f 'utils/expr.c' || echo '$(srcdir)/'`utils/expr.c
 
 libibase_la-zvbcode.lo: utils/zvbcode.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-zvbcode.lo -MD -MP -MF $(DEPDIR)/libibase_la-zvbcode.Tpo -c -o libibase_la-zvbcode.lo `test -f 'utils/zvbcode.c' || echo '$(srcdir)/'`utils/zvbcode.c
