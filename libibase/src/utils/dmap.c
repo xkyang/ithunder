@@ -32,7 +32,7 @@ DMAP *dmap_init(char *file)
            {
                 i = ftruncate(dmap->fd, sizeof(DMMSTATE));
                 memset(dmap->state, 0, sizeof(DMMSTATE));
-                dmap->size += sizeof(DMMSTATE);
+                dmap->size = sizeof(DMMSTATE);
                 for(i = 0; i < DMM_SLOT_MAX; i++)
                 {
                    dmap->state->slots[i].nodeid = -1;
@@ -79,7 +79,7 @@ int dmap_vset(DMAP *dmap, u32_t no, double val)
             //memset(((char *)dmap->vmap+dmap->vsize), 0, size - dmap->vsize);
             i = dmap->vsize / sizeof(DMMV);
             n = size / sizeof(DMMV);
-            while(i < n) dmap->vmap[i++].off = -1;
+            while(i < n) {dmap->vmap[i].off = -1;dmap->vmap[i].val=0;++i;}
             dmap->vsize = size;
         }
         //dmap->vmap[no].val = val; 
@@ -104,8 +104,8 @@ int dmap_vget(DMAP *dmap, u32_t no, double *val)
 /* new bolt  */
 int dmap_slot_new(DMAP *dmap)
 {
+    int ret = -1, i = 0, n = 0, id = 0;
     off_t size = 0;
-    int ret = -1, n = 0;
 
     if(dmap && dmap->state)
     {
@@ -116,10 +116,18 @@ int dmap_slot_new(DMAP *dmap)
         }
         else
         {
-            size = dmap->size + (off_t)sizeof(DMMKV) * (off_t)DMM_SLOT_NUM; 
+            size = (off_t)sizeof(DMMKV) * (off_t)DMM_SLOT_NUM * DMM_SLOT_INC + dmap->size; 
             n = ftruncate(dmap->fd, size);
             memset(((char *)dmap->state+dmap->size), 0, (size - dmap->size));
             ret = (dmap->size - (off_t)sizeof(DMMSTATE)) / (off_t)sizeof(DMMKV);
+            id = ret + DMM_SLOT_NUM;
+            i = 1;
+            while(i < DMM_SLOT_INC)
+            {
+                dmap->state->qleft[(dmap->state->nleft++)] = id;
+                id += DMM_SLOT_NUM;
+                ++i;
+            }
             dmap->size = size;
         }
     }
@@ -129,8 +137,8 @@ int dmap_slot_new(DMAP *dmap)
 int dmap_insert(DMAP *dmap, u32_t no, double key)
 {
     int ret = -1, i = 0, k = -1, nodeid = 0, pos = 0, num = 0, 
-        n = 0, x = 0;
-    DMMKV *kvs = NULL, *kv = NULL;
+        n = 0, x = 0, m = 0, num2 = 0;
+    DMMKV *kvs = NULL, *kv = NULL, *kv1 = NULL, *kv2 = NULL;
     DMMV *vnodes = NULL;
 
     if(dmap && dmap->state && (vnodes = dmap->vmap))
@@ -142,7 +150,7 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
         /* 未满的slot 直接插入 */
         if(k >= 0 && k < n && dmap->slots[k].count < DMM_SLOT_NUM)
         {
-            x = dmap->slots[k].count++;
+            m = x = dmap->slots[k].count++;
             kvs = dmap->map + dmap->slots[k].nodeid;
             while(x > 0 && key < kvs[x-1].key)
             {
@@ -154,47 +162,28 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
             kvs[x].key = key;
             kvs[x].val = no;
             dmap->vmap[no].off = (dmap->slots[k].nodeid + x);
-            if(key < dmap->slots[k].min) dmap->slots[k].min = key;
-            if(key > dmap->slots[k].max) dmap->slots[k].max = key;
+            dmap->slots[k].min = kvs[0].key;
+            dmap->slots[k].max = kvs[m].key;
         }
         else
         {
             nodeid = dmap_slot_new(dmap);
-            /* slot已满 转移元素到新的slot */
+            /* slot已满转移元素到新的slot */
             if(k >= 0 && k < n && dmap->slots[k].count == DMM_SLOT_NUM)
             {
-                kvs = dmap->map + dmap->slots[k].nodeid + DMM_SLOT2_NUM;
-                kv = dmap->map + nodeid;
+                kv1 = dmap->map + dmap->slots[k].nodeid + DMM_SLOT2_NUM;
+                kv2 = dmap->map + nodeid;
                 num = DMM_SLOT2_NUM;
-                x = 0;
-                for(i = 0; i < DMM_SLOT2_NUM; i++) 
+                if(key < kv1[0].key)
                 {
-                    if(key >= kvs->key && key < kvs[i].key && num == DMM_SLOT2_NUM) 
+                    /* 转移尾部一半元素到新slot */
+                    for(i = 0; i < DMM_SLOT2_NUM; i++)
                     {
-                        kv->key = key;
-                        kv->val = no;
-                        ++kv;
-                        ++x;
-                        dmap->vmap[no].off = (nodeid + x);
-                        num = DMM_SLOT2_NUM+1;
+                        kv2[i].key = kv1[i].key;
+                        kv2[i].val = kv1[i].val;
+                        dmap->vmap[(kv2[i].val)].off = (nodeid + i);
                     }
-                    kv->key = kvs[i].key;
-                    kv->val = kvs[i].val;
-                    ++kv;
-                    ++x;
-                    dmap->vmap[(kv->val)].off = (nodeid + x);
-                }
-                if(num == DMM_SLOT2_NUM && key >= kvs[i-1].key)
-                {
-                    kv->key = key;
-                    kv->val = no;
-                    ++kv;
-                    ++x;
-                    num = DMM_SLOT2_NUM+1;
-                    dmap->vmap[(kv->val)].off = (nodeid + x);
-                }
-                if(num == DMM_SLOT2_NUM)
-                {
+                    /* 插入到本slot */
                     kvs = dmap->map + dmap->slots[k].nodeid;
                     i = DMM_SLOT2_NUM;
                     while(i > 0 && key < kvs[i-1].key)
@@ -206,18 +195,39 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
                     }
                     kvs[i].key = key;
                     kvs[i].val = no;
-                    dmap->vmap[no].off = (dmap->slots[k].nodeid + i);
-                    dmap->slots[k].min = kvs[0].key;
-                    dmap->slots[k].max = kvs[DMM_SLOT2_NUM].key;
-                    dmap->slots[k].count = DMM_SLOT2_NUM + 1;
+                    dmap->vmap[(kvs[i].val)].off = (dmap->slots[k].nodeid + i);
+                    num = DMM_SLOT2_NUM;
+                    num2 = DMM_SLOT2_NUM + 1;
                 }
                 else
                 {
-                    kvs = dmap->map + dmap->slots[k].nodeid;
-                    dmap->slots[k].min = kvs[0].key;
-                    dmap->slots[k].max = kvs[DMM_SLOT2_NUM-1].key;
-                    dmap->slots[k].count = DMM_SLOT2_NUM;
+                    i = 0;
+                    x = 0;
+                    while(i < DMM_SLOT2_NUM)
+                    {
+                        if(key <= kv1[i].key && x == i)
+                        {
+                            kv2->key = key;
+                            kv2->val = no;
+                            dmap->vmap[(kv2->val)].off = (nodeid + x);
+                            ++x;
+                            ++kv2;
+                        }
+                        kv2->key = kv1[i].key;
+                        kv2->val = kv1[i].val;
+                        dmap->vmap[(kv2->val)].off = (nodeid + x);
+                        ++kv2;
+                        ++x;
+                        ++i;
+                    }
+                    num = DMM_SLOT2_NUM + 1;
+                    num2 = DMM_SLOT2_NUM;
                 }
+                /* rebuild slot */
+                kvs = dmap->map + dmap->slots[k].nodeid;
+                dmap->slots[k].count = num2;
+                dmap->slots[k].min = kvs[0].key; 
+                dmap->slots[k].max = kvs[num2-1].key; 
                 pos = k+1;
                 k = dmap->state->count++; 
                 while(k > pos)
@@ -227,17 +237,16 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
                     dmap->roots[x] = k;
                     --k;
                 }
-                dmap->roots[x] = k;
             }
             else
             {
-                /* 创建新的slot */
+                /* 插入新的slot */
                 kv = dmap->map + nodeid;
                 kv->key = key;
                 kv->val = no;
                 dmap->vmap[no].off = nodeid;
                 num = 1;
-                k = dmap->state->count++; 
+                m = k = dmap->state->count++; 
                 while(k > 0 && key <= dmap->slots[k].min)
                 {
                     memcpy(&(dmap->slots[k]), &(dmap->slots[k-1]), sizeof(DMMSLOT));
@@ -253,7 +262,6 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
             dmap->slots[k].count = num;
             x = (dmap->slots[k].nodeid / DMM_SLOT_NUM);
             dmap->roots[x] = k;
-            //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, dmap->slots[k].min, dmap->slots[k].max, num, dmap->state->count);
         }
     }
     return ret;
@@ -464,6 +472,10 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
 				  { 
 					  ret = x;
 				  }
+				  else
+				  {
+				      ret = x + 1;
+				  }
                   break;
               }
               if(key ==  kvs[x].key)
@@ -482,7 +494,7 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
            }
            if((x = ret) >= 0 && x < n)
            {
-               while(x >= 0 && key == kvs[x].key)
+               while(x >= 0 && key <= kvs[x].key)
                {
                     ret = x--;
                }
@@ -517,6 +529,10 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
 				   {
 					   ret = x;
 				   }
+				   else
+				   {
+				       ret = x - 1;
+				   }
                    break;
               }
               if(key ==  kvs[x].key)
@@ -535,7 +551,7 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
            }
            if((x = ret) >= 0 && x < n)
            {
-              while(x < n && key == kvs[x].key)
+              while(x < n && key >= kvs[x].key)
               {
                   ret = x++;
               }
