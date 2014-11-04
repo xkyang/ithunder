@@ -656,11 +656,11 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
                     for(x = 0; x < imap->slots[j].count; x++) list[z++] = kvs[x].val;
                 }
             }
-            ret += ii;
+            ret += ii + 1;
             if(list)
             {
                 kvs = imap->map + imap->slots[kk].nodeid;
-                for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
+                for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
         RWLOCK_UNLOCK(imap->rwlock);

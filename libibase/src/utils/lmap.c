@@ -656,11 +656,11 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
                     for(x = 0; x < lmap->slots[j].count; x++) list[z++] = kvs[x].val;
                 }
             }
-            ret += ii;
+            ret += ii + 1;
             if(list)
             {
                 kvs = lmap->map + lmap->slots[kk].nodeid;
-                for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
+                for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
         RWLOCK_UNLOCK(lmap->rwlock);

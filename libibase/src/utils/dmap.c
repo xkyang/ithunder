@@ -656,11 +656,11 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
                     for(x = 0; x < dmap->slots[j].count; x++) list[z++] = kvs[x].val;
                 }
             }
-            ret += ii;
+            ret += ii + 1;
             if(list)
             {
                 kvs = dmap->map + dmap->slots[kk].nodeid;
-                for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
+                for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
         RWLOCK_UNLOCK(dmap->rwlock);
