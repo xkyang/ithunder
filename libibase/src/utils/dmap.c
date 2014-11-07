@@ -636,11 +636,6 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
            return ret;
         }
         ii = dmap_find_kv2(dmap, kk, to);
-        if(ii == -1)
-        {
-           RWLOCK_UNLOCK(dmap->rwlock);
-           return ret;
-        }
         if(k == kk)
         {
             ret = ii + 1 - i;
@@ -722,9 +717,9 @@ int dmap_rangeto(DMAP *dmap, double key, u32_t *list) /* key = to */
     if(dmap && dmap->state && (n = (dmap->state->count)) > 0)
     {
         RWLOCK_RDLOCK(dmap->rwlock);
-        if((k = dmap_find_slot2(dmap, key)) >= 0 && k < n 
-                && (i = dmap_find_kv2(dmap, k, key)) >= 0)
+        if((k = dmap_find_slot2(dmap, key)) >= 0 && k < n) 
         {
+            i = dmap_find_kv2(dmap, k, key);
             for(j = 0; j < k; j++)
             {
                 ret += dmap->slots[j].count;

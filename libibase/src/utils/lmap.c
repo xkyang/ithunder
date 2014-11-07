@@ -636,11 +636,6 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
            return ret;
         }
         ii = lmap_find_kv2(lmap, kk, to);
-        if(ii == -1)
-        {
-           RWLOCK_UNLOCK(lmap->rwlock);
-           return ret;
-        }
         if(k == kk)
         {
             ret = ii + 1 - i;
@@ -722,9 +717,9 @@ int lmap_rangeto(LMAP *lmap, int64_t key, u32_t *list) /* key = to */
     if(lmap && lmap->state && (n = (lmap->state->count)) > 0)
     {
         RWLOCK_RDLOCK(lmap->rwlock);
-        if((k = lmap_find_slot2(lmap, key)) >= 0 && k < n 
-                && (i = lmap_find_kv2(lmap, k, key)) >= 0)
+        if((k = lmap_find_slot2(lmap, key)) >= 0 && k < n) 
         {
+            i = lmap_find_kv2(lmap, k, key);
             for(j = 0; j < k; j++)
             {
                 ret += lmap->slots[j].count;

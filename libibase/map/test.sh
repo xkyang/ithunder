@@ -14,7 +14,7 @@ if [ $# -eq 0 ];then
    cd utils
    if [ -e imap.c ];then
 	  mv imap.c ori.imap.c
-      ln -s ../../map/utils/imap.c .
+      ln -s ../../map/utils/ximap.c imap.c
 	  ./gen.sh
    fi
    cd ../

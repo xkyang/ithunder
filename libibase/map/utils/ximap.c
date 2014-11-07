@@ -479,7 +479,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-		fprintf(stdout,"find_kv(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
+	fprintf(stdout,"find_kv(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
         if(kvs[min].key >= key) ret = min;
         else if(kvs[max].key < key) return ret; //one slot,no result
         else
@@ -539,7 +539,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-		fprintf(stdout,"find_kv2(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
+	fprintf(stdout,"find_kv2(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
         if(kvs[min].key > key) return ret;//one slot,no result
         else if(kvs[max].key <= key) ret = max;
         else
@@ -683,22 +683,26 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
 		if(i > 0)
 		{
 		   fprintf(stdout,"\t\timap_kv_left_%d(from:%d key:%d)\n",i-1,from,kvs[i-1].key);
-		   fprintf(stdout,"\t\timap_kv_right_%d(from:%d key:%d)\n",i+1,from,kvs[i+1].key);
 		}
+                if(i < (imap->slots[k].count - 1))
+                {
+		   fprintf(stdout,"\t\timap_kv_right_%d(from:%d key:%d)\n",i+1,from,kvs[i+1].key);
+                }
 		fprintf(stdout,"--------------------------\n");
         ii = imap_find_kv2(imap, kk, to);
-        if(ii == -1)
-        {
-           RWLOCK_UNLOCK(imap->rwlock);
-           return ret;
-        }
         kvs = imap->map + imap->slots[kk].nodeid;
-		fprintf(stdout,"\t\timap_kv2_%d(to:%d key:%d)\n",ii,to,kvs[ii].key);
-		if(ii > 0)
+		if(ii >= 0)
 		{
-		   fprintf(stdout,"\t\timap_kv2_left_%d(to:%d key:%d)\n",ii-1,to,kvs[ii-1].key);
-		   fprintf(stdout,"\t\timap_kv2_right_%d(to:%d key:%d)\n",ii+1,to,kvs[ii+1].key);
+		   fprintf(stdout,"\t\timap_kv2_%d(to:%d key:%d)\n",ii,to,kvs[ii].key);
+                   if(ii > 0)
+                   {
+		      fprintf(stdout,"\t\timap_kv2_left_%d(to:%d key:%d)\n",ii-1,to,kvs[ii-1].key);
+                   }
 		}
+                if(ii < (imap->slots[kk].count - 1))
+                {
+		   fprintf(stdout,"\t\timap_kv2_right_%d(to:%d key:%d)\n",ii+1,to,kvs[ii+1].key);
+                }
 		fprintf(stdout,"--------------------------\n");
 		fprintf(stdout,"\t\timap_range(from:%d to:%d slot:%d/%d kv:%d/%d)\n",from,to,k,kk,i,ii);
 		fprintf(stdout,"--------------------------\n");
@@ -787,9 +791,9 @@ int imap_rangeto(IMAP *imap, int32_t key, u32_t *list) /* key = to */
     if(imap && imap->state && (n = (imap->state->count)) > 0)
     {
         RWLOCK_RDLOCK(imap->rwlock);
-        if((k = imap_find_slot2(imap, key)) >= 0 && k < n 
-                && (i = imap_find_kv2(imap, k, key)) >= 0)
+        if((k = imap_find_slot2(imap, key)) >= 0 && k < n) 
         {
+            i = imap_find_kv2(imap, k, key);
             for(j = 0; j < k; j++)
             {
                 ret += imap->slots[j].count;

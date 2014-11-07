@@ -636,11 +636,6 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
            return ret;
         }
         ii = imap_find_kv2(imap, kk, to);
-        if(ii == -1)
-        {
-           RWLOCK_UNLOCK(imap->rwlock);
-           return ret;
-        }
         if(k == kk)
         {
             ret = ii + 1 - i;
@@ -722,9 +717,9 @@ int imap_rangeto(IMAP *imap, int32_t key, u32_t *list) /* key = to */
     if(imap && imap->state && (n = (imap->state->count)) > 0)
     {
         RWLOCK_RDLOCK(imap->rwlock);
-        if((k = imap_find_slot2(imap, key)) >= 0 && k < n 
-                && (i = imap_find_kv2(imap, k, key)) >= 0)
+        if((k = imap_find_slot2(imap, key)) >= 0 && k < n) 
         {
+            i = imap_find_kv2(imap, k, key);
             for(j = 0; j < k; j++)
             {
                 ret += imap->slots[j].count;
