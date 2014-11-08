@@ -381,6 +381,10 @@ int imap_find_slot(IMAP *imap, int32_t key)
                    ret = max = x - 1;
                 }
             }
+            if(ret >= 0 && key > imap->slots[ret].max && ret < (n - 1))
+            {
+               ++ret;
+            }
 			if((x = ret)>= 0 && x < n)
 		    {
 		        while(x >= 0 && key <= imap->slots[x].max)
@@ -447,6 +451,10 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                 {
                    ret = min = x + 1;
                 }
+            }
+            if(ret >= 0 && key < imap->slots[ret].min)
+            {
+               --ret;
             }
 			if((x = ret) >= 0 && x < n)
 		    {

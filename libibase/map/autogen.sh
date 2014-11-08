@@ -5,9 +5,10 @@ if [ $# -eq 0 ];then
    while read line
    do
      if [ ! -e ${line}.c ];then
-        ln -s ../../map/utils/${line}.c .
+        cp ../../map/utils/${line}.c .
      fi
    done
+   perl -i -p -e "s/%ND/%d/g" ximap.c
    if [ ! -e autogen.sh ];then
       ln -s ../../map/autogen.sh .
    fi

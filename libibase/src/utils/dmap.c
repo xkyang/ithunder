@@ -381,6 +381,10 @@ int dmap_find_slot(DMAP *dmap, double key)
                    ret = max = x - 1;
                 }
             }
+            if(ret >= 0 && key > dmap->slots[ret].max && ret < (n - 1))
+            {
+               ++ret;
+            }
 			if((x = ret)>= 0 && x < n)
 		    {
 		        while(x >= 0 && key <= dmap->slots[x].max)
@@ -447,6 +451,10 @@ int dmap_find_slot2(DMAP *dmap, double key)
                 {
                    ret = min = x + 1;
                 }
+            }
+            if(ret >= 0 && key < dmap->slots[ret].min)
+            {
+               --ret;
             }
 			if((x = ret) >= 0 && x < n)
 		    {

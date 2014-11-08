@@ -333,8 +333,8 @@ int imap_find_slot(IMAP *imap, int32_t key)
     {
         max = n - 1;
         min = 0;
-		fprintf(stdout,"find_slot(key:%d total-slot::%d min:%d/%d/%d max:%d/%d/%d)\n",key,n,imap->slots[min].count,imap->slots[min].min,imap->slots[min].max,
-				                  imap->slots[max].count,imap->slots[max].min,imap->slots[max].max);
+	fprintf(stdout,"find_slot(key:%ND total-slot::%d min:%d/%ND/%ND max:%d/%ND/%ND)\n",key,n,imap->slots[min].count,imap->slots[min].min,imap->slots[min].max,
+        imap->slots[max].count,imap->slots[max].min,imap->slots[max].max);
         if(key <= imap->slots[min].max) ret = min;
         else if(key > imap->slots[max].min) ret = max;
         else
@@ -342,7 +342,7 @@ int imap_find_slot(IMAP *imap, int32_t key)
             while(max > min)
             {
                 x = (min + max) / 2;
-		fprintf(stdout,"find_slot(min:%d max:%d x:%d x-count:%d x-min:%d x-max:%d)\n",min,max,x,imap->slots[x].count,imap->slots[x].min,imap->slots[x].max);
+		fprintf(stdout,"find_slot(min:%d max:%d x:%d x-count:%d x-min:%ND x-max:%ND)\n",min,max,x,imap->slots[x].count,imap->slots[x].min,imap->slots[x].max);
                 if(x == min)
                 {
 					if(key > imap->slots[x].max)
@@ -384,14 +384,18 @@ int imap_find_slot(IMAP *imap, int32_t key)
                    ret = max = x - 1;
                 }
             }
-fprintf(stdout,"find_slot(min:%d max:%d ret:%d ret-count:%d ret-min:%d ret-max:%d)\n",min,max,ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
-			if((x = ret)>= 0 && x < n)
-		    {
-		        while(x >= 0 && key <= imap->slots[x].max)
-		        {
-		           ret = x--;
-				}
-		    }
+            if(ret >= 0 && key > imap->slots[ret].max && ret < (n - 1))
+            {
+               ++ret;
+            }
+fprintf(stdout,"find_slot(min:%d max:%d ret:%d ret-count:%d ret-min:%ND ret-max:%ND)\n",min,max,ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
+	    if((x = ret)>= 0 && x < n)
+	    {
+	        while(x >= 0 && key <= imap->slots[x].max)
+	        {
+	           ret = x--;
+		}
+	    }
         }
     }
     return ret;
@@ -404,7 +408,7 @@ int imap_find_slot2(IMAP *imap, int32_t key)
     {
         max = n - 1;
         min = 0;
-		fprintf(stdout,"find_slot2(key:%d total-slot::%d min:%d/%d/%d max:%d/%d/%d)\n",key,n,imap->slots[min].count,imap->slots[min].min,imap->slots[min].max,
+		fprintf(stdout,"find_slot2(key:%ND total-slot::%d min:%d/%ND/%ND max:%d/%ND/%ND)\n",key,n,imap->slots[min].count,imap->slots[min].min,imap->slots[min].max,
 				                  imap->slots[max].count,imap->slots[max].min,imap->slots[max].max);
         if(key >= imap->slots[max].min) ret = max;
         else if(key < imap->slots[min].max) ret = min;
@@ -413,7 +417,7 @@ int imap_find_slot2(IMAP *imap, int32_t key)
             while(max > min)
             {
                 x = (min + max) / 2;
-		fprintf(stdout,"find_slot2(min:%d max:%d x:%d x-count:%d x-min:%d x-max:%d)\n",min,max,x,imap->slots[x].count,imap->slots[x].min,imap->slots[x].max);
+		fprintf(stdout,"find_slot2(min:%d max:%d x:%d x-count:%d x-min:%ND x-max:%ND)\n",min,max,x,imap->slots[x].count,imap->slots[x].min,imap->slots[x].max);
                 if(x == min)
                 {
 					if(key < imap->slots[x].min)
@@ -455,7 +459,11 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                    ret = min = x + 1;
                 }
             }
-fprintf(stdout,"find_slot2(min:%d max:%d ret:%d ret-count:%d ret-min:%d ret-max:%d)\n",min,max,ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
+            if(ret >= 0 && key < imap->slots[ret].min)
+            {
+               --ret;
+            }
+fprintf(stdout,"find_slot2(min:%d max:%d ret:%d ret-count:%d ret-min:%ND ret-max:%ND)\n",min,max,ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
 			if((x = ret) >= 0 && x < n)
 		    {
 		       while(x < n && key >= imap->slots[x].min) 
@@ -479,7 +487,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-	fprintf(stdout,"find_kv(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
+	fprintf(stdout,"find_kv(k:%d key:%ND min:%d min-k:%ND max:%d max-k:%ND)\n",k,key,min,kvs[min].key,max,kvs[max].key);
         if(kvs[min].key >= key) ret = min;
         else if(kvs[max].key < key) return ret; //one slot,no result
         else
@@ -487,7 +495,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
            while(max > min)
            {
               x = (min + max) / 2;
-		      fprintf(stdout,"find_kv(key:%d min:%d min-k:%d max:%d max-k:%d x:%d x-k:%d)\n",key,min,kvs[min].key,max,kvs[max].key,
+		      fprintf(stdout,"find_kv(key:%ND min:%d min-k:%ND max:%d max-k:%ND x:%d x-k:%ND)\n",key,min,kvs[min].key,max,kvs[max].key,
 					  x,kvs[x].key);
               if(x == min)
               {
@@ -523,7 +531,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
                }
            }
         }
-        //fprintf(stdout, "find_kv(%d) min:%d max:%d count:%d ret:%d\n", key, imap->slots[k].min, imap->slots[k].max, imap->slots[k].count, ret);
+        //fprintf(stdout, "find_kv(%ND) min:%d max:%d count:%d ret:%d\n", key, imap->slots[k].min, imap->slots[k].max, imap->slots[k].count, ret);
     }
     return ret;
 }
@@ -539,7 +547,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-	fprintf(stdout,"find_kv2(k:%d key:%d min:%d min-k:%d max:%d max-k:%d)\n",k,key,min,kvs[min].key,max,kvs[max].key);
+	fprintf(stdout,"find_kv2(k:%d key:%ND min:%d min-k:%ND max:%d max-k:%ND)\n",k,key,min,kvs[min].key,max,kvs[max].key);
         if(kvs[min].key > key) return ret;//one slot,no result
         else if(kvs[max].key <= key) ret = max;
         else
@@ -547,7 +555,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
            while(max > min)
            {
               x = (min + max) / 2;
-		      fprintf(stdout,"find_kv2(key:%d min:%d min-k:%d max:%d max-k:%d x:%d x-k:%d)\n",key,min,kvs[min].key,max,kvs[max].key,
+		      fprintf(stdout,"find_kv2(key:%ND min:%d min-k:%ND max:%d max-k:%ND x:%d x-k:%ND)\n",key,min,kvs[min].key,max,kvs[max].key,
 					  x,kvs[x].key);
               if(x == min)
               {
@@ -597,14 +605,14 @@ int imap_in(IMAP *imap, int32_t key, u32_t *list)
         RWLOCK_RDLOCK(imap->rwlock);
         k = imap_find_slot(imap, key);
         i = imap_find_kv(imap, k, key);
-		fprintf(stdout,"\t\timap_in_%d(key:%d count:%d min:%d max:%d)\n",k,key,imap->slots[k].count,imap->slots[k].min,imap->slots[k].max);
+		fprintf(stdout,"\t\timap_in_%d(key:%ND count:%d min:%ND max:%ND)\n",k,key,imap->slots[k].count,imap->slots[k].min,imap->slots[k].max);
 		if(k > 0)
 		{
-		    fprintf(stdout,"\t\timap_slot_left_%d(key:%d count:%d min:%d max:%d)\n",k-1,key,imap->slots[k-1].count,imap->slots[k-1].min,imap->slots[k-1].max);
+		    fprintf(stdout,"\t\timap_slot_left_%d(key:%ND count:%d min:%ND max:%ND)\n",k-1,key,imap->slots[k-1].count,imap->slots[k-1].min,imap->slots[k-1].max);
 		}
 		if(k < (imap->state->count-1))
 		{
-		    fprintf(stdout,"\t\timap_slot_right_%d(key:%d count:%d min:%d max:%d)\n",k+1,key,imap->slots[k+1].count,imap->slots[k+1].min,imap->slots[k+1].max);
+		    fprintf(stdout,"\t\timap_slot_right_%d(key:%ND count:%d min:%ND max:%ND)\n",k+1,key,imap->slots[k+1].count,imap->slots[k+1].min,imap->slots[k+1].max);
 		}
         if(i == -1)
         {
@@ -651,25 +659,25 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
         if(from == to) return imap_in(imap, from, list);
         RWLOCK_RDLOCK(imap->rwlock);
         k = imap_find_slot(imap, from);
-		fprintf(stdout,"\t\timap_range_%d(from:%d count:%d min:%d max:%d)\n",k,from,imap->slots[k].count,imap->slots[k].min,imap->slots[k].max);
+		fprintf(stdout,"\t\timap_range_%d(from:%ND count:%d min:%ND max:%ND)\n",k,from,imap->slots[k].count,imap->slots[k].min,imap->slots[k].max);
 		if(k > 0)
 		{
-		    fprintf(stdout,"\t\timap_slot_left_%d(from:%d count:%d min:%d max:%d)\n",k-1,from,imap->slots[k-1].count,imap->slots[k-1].min,imap->slots[k-1].max);
+		    fprintf(stdout,"\t\timap_slot_left_%d(from:%ND count:%d min:%ND max:%ND)\n",k-1,from,imap->slots[k-1].count,imap->slots[k-1].min,imap->slots[k-1].max);
 		}
 		if(k < (imap->state->count-1))
 		{
-		    fprintf(stdout,"\t\timap_slot_right_%d(from:%d count:%d min:%d max:%d)\n",k+1,from,imap->slots[k+1].count,imap->slots[k+1].min,imap->slots[k+1].max);
+		    fprintf(stdout,"\t\timap_slot_right_%d(from:%ND count:%d min:%ND max:%ND)\n",k+1,from,imap->slots[k+1].count,imap->slots[k+1].min,imap->slots[k+1].max);
 		}
 		fprintf(stdout,"--------------------------\n");
         kk = imap_find_slot2(imap, to);
-		fprintf(stdout,"\t\timap_range_%d(to:%d count:%d min:%d max:%d)\n",kk,to,imap->slots[kk].count,imap->slots[kk].min,imap->slots[kk].max);
+		fprintf(stdout,"\t\timap_range_%d(to:%ND count:%d min:%ND max:%ND)\n",kk,to,imap->slots[kk].count,imap->slots[kk].min,imap->slots[kk].max);
 		if(kk > 0)
 		{
-		    fprintf(stdout,"\t\timap_slot_left_%d(to:%d count:%d min:%d max:%d)\n",kk-1,to,imap->slots[kk-1].count,imap->slots[kk-1].min,imap->slots[kk-1].max);
+		    fprintf(stdout,"\t\timap_slot_left_%d(to:%ND count:%d min:%ND max:%ND)\n",kk-1,to,imap->slots[kk-1].count,imap->slots[kk-1].min,imap->slots[kk-1].max);
 		}
 		if(kk < (imap->state->count-1))
 		{
-		    fprintf(stdout,"\t\timap_slot_right_%d(to:%d count:%d min:%d max:%d)\n",kk+1,to,imap->slots[kk+1].count,imap->slots[kk+1].min,imap->slots[kk+1].max);
+		    fprintf(stdout,"\t\timap_slot_right_%d(to:%ND count:%d min:%ND max:%ND)\n",kk+1,to,imap->slots[kk+1].count,imap->slots[kk+1].min,imap->slots[kk+1].max);
 		}
 		fprintf(stdout,"--------------------------\n");
         kvs = imap->map + imap->slots[k].nodeid;
@@ -679,32 +687,32 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
            RWLOCK_UNLOCK(imap->rwlock);
            return ret;
         }
-		fprintf(stdout,"\t\timap_kv_%d(from:%d key:%d)\n",i,from,kvs[i].key);
+		fprintf(stdout,"\t\timap_kv_%d(from:%ND key:%ND)\n",i,from,kvs[i].key);
 		if(i > 0)
 		{
-		   fprintf(stdout,"\t\timap_kv_left_%d(from:%d key:%d)\n",i-1,from,kvs[i-1].key);
+		   fprintf(stdout,"\t\timap_kv_left_%d(from:%ND key:%ND)\n",i-1,from,kvs[i-1].key);
 		}
                 if(i < (imap->slots[k].count - 1))
                 {
-		   fprintf(stdout,"\t\timap_kv_right_%d(from:%d key:%d)\n",i+1,from,kvs[i+1].key);
+		   fprintf(stdout,"\t\timap_kv_right_%d(from:%ND key:%ND)\n",i+1,from,kvs[i+1].key);
                 }
 		fprintf(stdout,"--------------------------\n");
         ii = imap_find_kv2(imap, kk, to);
         kvs = imap->map + imap->slots[kk].nodeid;
 		if(ii >= 0)
 		{
-		   fprintf(stdout,"\t\timap_kv2_%d(to:%d key:%d)\n",ii,to,kvs[ii].key);
+		   fprintf(stdout,"\t\timap_kv2_%d(to:%ND key:%ND)\n",ii,to,kvs[ii].key);
                    if(ii > 0)
                    {
-		      fprintf(stdout,"\t\timap_kv2_left_%d(to:%d key:%d)\n",ii-1,to,kvs[ii-1].key);
+		      fprintf(stdout,"\t\timap_kv2_left_%d(to:%ND key:%ND)\n",ii-1,to,kvs[ii-1].key);
                    }
 		}
                 if(ii < (imap->slots[kk].count - 1))
                 {
-		   fprintf(stdout,"\t\timap_kv2_right_%d(to:%d key:%d)\n",ii+1,to,kvs[ii+1].key);
+		   fprintf(stdout,"\t\timap_kv2_right_%d(to:%ND key:%ND)\n",ii+1,to,kvs[ii+1].key);
                 }
 		fprintf(stdout,"--------------------------\n");
-		fprintf(stdout,"\t\timap_range(from:%d to:%d slot:%d/%d kv:%d/%d)\n",from,to,k,kk,i,ii);
+		fprintf(stdout,"\t\timap_range(from:%ND to:%ND slot:%d/%d kv:%d/%d)\n",from,to,k,kk,i,ii);
 		fprintf(stdout,"--------------------------\n");
         if(k == kk)
         {

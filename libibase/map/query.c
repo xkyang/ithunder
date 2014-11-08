@@ -138,7 +138,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                    while(docs && off < n)
                    {
                      docid = docs[off];
-					 if(headers[docid].globalid == 96102517)
+					 if(headers[docid].globalid == 1181883)
 					 {
                         xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                         fprintf(stdout, "SUCESS----->docid:%d/%lld off:%d value:%d\n", docid, LL(headers[docid].globalid), off, xint);
@@ -148,7 +148,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
 				   }
 				   if(off == n)
 				   {
-		              docid = 777074;
+		              docid = 777074; //wrong docid
                       xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                       fprintf(stdout, "FAILED----->docid:%d/%lld off:%d value:%d k:%d\n", docid, LL(headers[docid].globalid), off, xint, k);
 				   }
@@ -189,7 +189,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                   while(docs && off < n)
                   {
                      docid = docs[off];
-					 if(headers[docid].globalid == 96102517)
+					 if(headers[docid].globalid == 1181883)
 					 {
                        xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                        fprintf(stdout, "\tSUCESS----->docid:%d/%lld off:%d value:%ld\n", docid, LL(headers[docid].globalid), off, xlong);
@@ -260,7 +260,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                   while(docs && off < n)
                   {
                    docid = docs[off];
-					 if(headers[docid].globalid == 96102517)
+					 if(headers[docid].globalid == 1181883)
 					 {
                    xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                    fprintf(stdout, "\tSUCCSS----->docid:%d/%lld off:%d value:%d\n", docid, LL(headers[docid].globalid), off, xint);
@@ -329,7 +329,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                    while(docs && off < n)
                    {
                    docid = docs[off];
-					 if(headers[docid].globalid == 96102517)
+					 if(headers[docid].globalid == 1181883)
 					 {
                    xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                    fprintf(stdout, "\tSUCESS---->docid:%d/%lld off:%d value:%ld\n", docid, LL(headers[docid].globalid), off, xlong);
@@ -488,7 +488,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     {
                         imax = inset_num - 1;imin = 0;
                         xint = IMAP_GET(ibase->state->mfields[secid][jj], docid);
-						if(headers[docid].globalid == 96102517)
+						if(headers[docid].globalid == 1181883)
 						{
             fprintf(stdout, "docid:%d/%lld jj:%d kk:%d imax:%d imin:%d xint:%d inset_num:%d value:%d\n", docid, LL(headers[docid].globalid), jj, kk,
 					         imax, imin, xint, inset_num,query->int_inset_list[kk].set[0]);
@@ -523,7 +523,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     {
                         imax = inset_num - 1;imin = 0;
                         xlong = LMAP_GET(ibase->state->mfields[secid][jj], docid);
-						if(headers[docid].globalid == 96102517)
+						if(headers[docid].globalid == 1181883)
 						{
             fprintf(stdout, "docid:%d/%lld jj:%d kk:%d imax:%d imin:%d xlong:%ld inset_num:%d value:%ld\n", docid, LL(headers[docid].globalid), jj, kk,
 					         imax, imin, xlong, inset_num,query->long_inset_list[kk].set[0]);
@@ -590,7 +590,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
-					if(headers[docid].globalid == 96102517)
+					if(headers[docid].globalid == 1181883)
 					{
             fprintf(stdout, "docid:%d/%lld i:%d k:%d ifrom:%d ito:%d xint:%d min_set_fid:%d\n", docid, LL(headers[docid].globalid), i, k,
 					         ifrom, ito, xint, min_set_fid);
@@ -630,9 +630,9 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
-					if(headers[docid].globalid == 96102517)
+					if(headers[docid].globalid == 1181883)
 					{
-            fprintf(stdout, "docid:%d/%lld i:%d k:%d lfrom:%d lto:%d xlong:%ld min_set_fid:%d\n", docid, LL(headers[docid].globalid), i, k,
+            fprintf(stdout, "docid:%d/%lld i:%d k:%d lfrom:%ld lto:%ld xlong:%ld min_set_fid:%d\n", docid, LL(headers[docid].globalid), i, k,
 					         lfrom, lto, xlong, min_set_fid);
 					}
                     if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
@@ -710,7 +710,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             }
             /* rank */
             doc_score = IB_LONG_SCORE(base_score);
-			if(headers[docid].globalid == 96102517)
+			if(headers[docid].globalid == 1181883)
 			{
           fprintf(stdout, "docid:%d/%lld base_socre:%lld\n", docid, LL(headers[docid].globalid), IBLL(base_score));
 			}
