@@ -1702,6 +1702,7 @@ void ibase_clean(IBASE *ibase)
         for(i = 0; i < ibase->nqiterms; i++){xmm_free(ibase->qiterms[i], sizeof(ITERM) * IB_QUERY_MAX);}
         for(i = 0; i < ibase->nqxmaps; i++){xmm_free(ibase->qxmaps[i], sizeof(XMAP));}
         for(i = 0; i < ibase->nqstrees; i++){mtree64_clean((MTR64(ibase->qstrees[i])));}
+        for(i = 0; i < ibase->nqexprs; i++){expr_clean((EXPXK(ibase->qexprs[i])));}
         for(i = 0; i < ibase->nqmmxs; i++){IMMX_CLEAN(ibase->qmmxs[i]);}
         for(i = 0; i < ibase->nqchunks; i++){xmm_free(ibase->qchunks[i], sizeof(ICHUNK));}
 #ifdef HAVE_SCWS

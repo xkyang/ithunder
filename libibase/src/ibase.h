@@ -7,7 +7,6 @@ extern "C" {
 #define  IB_ONLINE              0x00
 #define  IB_OFFLINE             0x01
 #define  IB_KEYTERM_MAX         256
-#define  IB_ORDERBY_MAX         64
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
 #endif
@@ -20,8 +19,8 @@ extern "C" {
 #define  IB_DOUBLE_TO           128
 #define  IB_DIS_OFF             128
 #define  IB_DIS_TO              160
-#define  IB_INSET_MAX           4
 #define  IB_IN_MAX              512
+#define  IB_INSET_MAX           4
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
@@ -74,12 +73,13 @@ extern "C" {
 #define  IB_XNODE_MAX           10000
 #define  IB_XMAPS_MAX           2048
 #define  IB_STREES_MAX          2048
-#define  IB_EXPR_MAX            2048
 #define  IB_MMX_MAX             2048
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
 #define  IB_SEC_MAX             8192
+#define  IB_ORDERBY_MAX         64
+#define  IB_EXPR_MAX            2048
 #define  IBLL(xxx) ((long long int)(xxx))
 /*
  * ;16384=16K 32768=32K 65536=64K 131072=128K 262144=256K 524288=512K 786432=768K 
@@ -441,9 +441,6 @@ typedef struct _FINSET
     short       field_id;
     double      set[IB_IN_MAX];
 }FINSET;
-#define IB_BITFIELDS_FILTER  0x01
-#define IB_BITFIELDS_BLOCK   0x02
-#define IB_INT_BITS_MAX      32
 #define IB_BITFIELDS_FILTER  0x01
 #define IB_BITFIELDS_BLOCK   0x02
 #define IB_INT_BITS_MAX      32
