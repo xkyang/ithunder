@@ -562,8 +562,9 @@ typedef struct _IWEIGHT
 #define  IB_INT_BASE    1000000
 #define  IB_FLOAT_LIMIT 1000000
 #define  IB_INT_SCORE(X) ((int)((X) * IB_INT_BASE))
-#define  IB_LONG_INT(X) ((int64_t)(((int)(X)) * (int)IB_EXPR_BASE))
-#define  IB_LONG_SCORE(X) ((int64_t)(((double)(X)) * (double)IB_EXPR_BASE))
+#define  IB_LONG_LONG(X) ((int64_t)((X) * IB_EXPR_BASE))
+#define  IB_LONG_INT(X) ((int64_t)(((int64_t)(X)) * IB_EXPR_BASE))
+#define  IB_LONG_SCORE(X) ((int64_t)(((double)(X)) * IB_EXPR_BASE))
 #define  IB_LONG2FLOAT(X) ((double)(((double)(X)) / (double)IB_EXPR_BASE))
 #define  IB_INT2LONG_SCORE(X) ((int64_t)X << 32)
 /* record */
