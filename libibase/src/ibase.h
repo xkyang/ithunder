@@ -77,7 +77,7 @@ extern "C" {
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
-#define  IB_SEC_MAX             8192
+#define  IB_SEC_MAX             64
 #define  IB_ORDERBY_MAX         64
 #define  IB_EXPR_MAX            2048
 #define  IBLL(xxx) ((long long int)(xxx))
@@ -514,6 +514,7 @@ typedef struct _IQUERY
     short       long_bits_count;
     short       status;
     short       nvqterms;
+	short		bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -547,6 +548,8 @@ typedef struct _IQUERY
     int64_t     category_filter;
     int64_t     catblock_filter;
     int64_t     multicat_filter;
+    int64_t     secblock_filter;
+    int64_t     dbblock_filter;
 }IQUERY;
 
 /* weight */
@@ -561,9 +564,7 @@ typedef struct _IWEIGHT
 #define  IB_EXPR_BASE   100
 #define  IB_INT_BASE    1000000
 #define  IB_FLOAT_LIMIT 1000000
-#define  IB_INT_SCORE(X) ((int)((X) * IB_INT_BASE))
-#define  IB_LONG_LONG(X) ((int64_t)((X) * IB_EXPR_BASE))
-#define  IB_LONG_INT(X) ((int64_t)(((int64_t)(X)) * IB_EXPR_BASE))
+#define  IB_INT_SCORE(X) ((int64_t)((X) * IB_INT_BASE))
 #define  IB_LONG_SCORE(X) ((int64_t)(((double)(X)) * IB_EXPR_BASE))
 #define  IB_LONG2FLOAT(X) ((double)(((double)(X)) / (double)IB_EXPR_BASE))
 #define  IB_INT2LONG_SCORE(X) ((int64_t)X << 32)

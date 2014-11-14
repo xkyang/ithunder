@@ -245,12 +245,12 @@ int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid
        if((field >= expr->int_range.from) && (field < expr->int_range.to))
        {
 	      fid = field - expr->int_range.from + IB_INT_OFF;
-          value = IB_LONG_INT(IMAP_GET(state->mfields[secid][fid], docid));
+          value = (int64_t)(IMAP_GET(state->mfields[secid][fid], docid));
        } 
        else if((field >= expr->long_range.from) && (field < expr->long_range.to))
        {
 	      fid = field - expr->long_range.from + IB_LONG_OFF;
-          value = IB_LONG_LONG(LMAP_GET(state->mfields[secid][fid], docid));
+          value = LMAP_GET(state->mfields[secid][fid], docid);
        } 
        else if((field >= expr->double_range.from) && (field < expr->double_range.to))
        {

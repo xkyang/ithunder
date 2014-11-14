@@ -277,7 +277,7 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                 x = ibase->state->secs[k];
                 sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
                 ibase->mindex[x] = mdb_init(path, 1);
-                mdb_set_block_incre_mode(ibase->mindex[x], DB_BLOCK_INCRE_DOUBLE);
+                mdb_set_block_incre_mode(ibase->mindex[x], MDB_BLOCK_INCRE_DOUBLE);
                 sprintf(path, "%s/%s/%d/", dir, IB_IDX_DIR, x);
                 ibase_mkdir(path);
                 for(i = IB_INT_OFF; i < IB_INT_TO; i++)
@@ -362,7 +362,7 @@ void ibase_check_mindex(IBASE *ibase, int secid)
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);
             ibase->state->secs[ibase->state->nsecs++] = secid;
-            mdb_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
+            mdb_set_block_incre_mode(ibase->mindex[secid], MDB_BLOCK_INCRE_DOUBLE);
         }
         if(!ibase->state->headers[secid].map)
         {
@@ -615,7 +615,7 @@ void ibase_push_expr(IBASE *ibase, void *expr)
     if(ibase && expr)
     {
         MUTEX_LOCK(ibase->mutex_expr);
-        if(ibase->nqexprs < IB_STREES_MAX)
+        if(ibase->nqexprs < IB_EXPR_MAX)
         {
             expr_clean(EXPXK(expr));
             x = ibase->nqexprs++;
@@ -1640,7 +1640,7 @@ int ibase_set_log_level(IBASE *ibase, int level)
     if(ibase && ibase->logger)
     {
         LOGGER_SET_LEVEL(ibase->logger, level);
-        if(ibase->index){LOGGER_SET_LEVEL(PDB(ibase->index)->logger, level);}
+        if(ibase->index){LOGGER_SET_LEVEL(PMDB(ibase->index)->logger, level);}
         if(ibase->source){LOGGER_SET_LEVEL(PDB(ibase->source)->logger, level);}
     }
     return 0;

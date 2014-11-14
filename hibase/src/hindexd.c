@@ -172,9 +172,13 @@ static char *e_argvs[] =
 #define E_ARGV_DBID         39
     "secid",
 #define E_ARGV_SECID        40
+    "secblock",             
+#define E_ARGV_SECBLOCK     41 
+    "dbblock",             
+#define E_ARGV_DBBLOCK      42 
     ""
 };
-#define  E_ARGV_NUM         41
+#define  E_ARGV_NUM         43
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -306,7 +310,7 @@ err_end:
 /* multi query & merge */
 void indexd_query_handler(void *args)
 {
-    int64_t score = 0, id = 0, xlong = 0, xdata = 0;
+    int64_t score = 0, id = 0, xlong = 0, xdata = 0, secblock = 0;
     char line[sizeof(IHEAD) + sizeof(IRES)], buf[HTTP_BUF_SIZE], *summary = NULL, *p = NULL;
     ICHUNK *ichunk = NULL, *xchunk = NULL;
     int i = 0, secid = 0, n = 0, x = 0, ret = -1;
@@ -328,15 +332,21 @@ void indexd_query_handler(void *args)
         {
             i = --(qtask->qsecs);
             secid =  qtask->secs[i];
+            secblock = (int64_t)1 << secid;
         }
         pthread_mutex_unlock(&qtask->mutex);
         xchunk = qtask->chunk;
-        if(pquery->nquerys > 0) 
-        {
+		if((pquery->secblock_filter & secblock) == 0)
+		{
+          if(pquery->nquerys > 0) 
+          {
             ichunk = ibase_bquery(db, pquery, secid);
-        }
-        else 
+          }
+          else 
+		  {
             ichunk = ibase_query(db, pquery, secid);
+		  }
+		}
         pthread_mutex_lock(&qtask->mutex);
         if(ichunk)
         {
@@ -884,7 +894,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, 
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, *secblock = NULL, *dbblock = NULL, 
          *geofilter = NULL, *keys = NULL, *keyslist[IB_IDX_MAX], *notlist[IB_IDX_MAX];
     char *orderby = NULL;
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
@@ -1029,6 +1039,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         case E_ARGV_SECID:
                             query->secid = atoi(p);
                             break;
+                        case E_ARGV_SECBLOCK:
+                            secblock = p;
+                            break;
+                        case E_ARGV_DBBLOCK:
+                            dbblock = p;
+                            break;
                         default :
                             break;
                     }
@@ -1124,6 +1140,42 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 {
                     query->catgroup_filter |= (int64_t)1 << i;
                     //fprintf(stdout, "catgroup:%d\n", i);
+                }
+                while(*p >= '0' && *p <= '9')++p;
+                ++i;
+                if(p == last)break;
+            }
+        }
+        /*secblock */
+        if((p = secblock))
+        {
+            i = 0;
+            while(*p != '\0') 
+            {
+                last = p;
+                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
+                if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IB_SEC_MAX) 
+                {
+                    query->secblock_filter |= (int64_t)1 << i;
+                    //fprintf(stdout, "secblock:%d\n", i);
+                }
+                while(*p >= '0' && *p <= '9')++p;
+                ++i;
+                if(p == last)break;
+            }
+        }
+        /*dbblock */
+        if((p = dbblock))
+        {
+            i = 0;
+            while(*p != '\0') 
+            {
+                last = p;
+                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
+                if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IBASE_DB_MAX) 
+                {
+                    query->dbblock_filter |= (int64_t)1 << i;
+                    //fprintf(stdout, "dbblock:%d\n", i);
                 }
                 while(*p >= '0' && *p <= '9')++p;
                 ++i;
@@ -1525,7 +1577,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         if(booland > 0) query->flag |= IB_QUERY_BOOLAND;
         if(query_str)
         {
-            ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld orderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), orderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
+            ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld secblock:%lld dbblock:%lld norderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), LL64(query->secblock_filter),LL64(query->dbblock_filter), norderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
         }
         if(nkeys > 0)
         {
