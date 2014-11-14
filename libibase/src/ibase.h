@@ -78,6 +78,7 @@ extern "C" {
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
 #define  IB_SEC_MAX             64
+#define  IB_DB_MAX              64
 #define  IB_ORDERBY_MAX         64
 #define  IB_EXPR_MAX            2048
 #define  IBLL(xxx) ((long long int)(xxx))
@@ -549,7 +550,6 @@ typedef struct _IQUERY
     int64_t     catblock_filter;
     int64_t     multicat_filter;
     int64_t     secblock_filter;
-    int64_t     dbblock_filter;
 }IQUERY;
 
 /* weight */
@@ -866,7 +866,7 @@ int ibase_set_log_level(IBASE *ibase, int level);
 /* query with bitmap merging */
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
 /* get secs */
-int ibase_get_secs(IBASE *ibase, int *secs);
+int ibase_get_secs(IBASE *ibase, int64_t nosec, int *secs);
 /* query with binary list merging */
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid);
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid);

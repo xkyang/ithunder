@@ -396,14 +396,22 @@ void ibase_check_mindex(IBASE *ibase, int secid)
 }
 
 /* get secs */
-int ibase_get_secs(IBASE *ibase, int *secs)
+int ibase_get_secs(IBASE *ibase, int64_t nosec, int *secs)
 {
-    int ret = 0;
+    int ret = 0, i = 0, n = 0, sec = 0;
 
     if(ibase && secs)
     {
-        ret = ibase->state->nsecs;
-        memcpy(secs, ibase->state->secs, sizeof(int) * ret);
+	   n = ibase->state->nsecs;
+	   for(i = 0; i < n; i++)
+	   {
+		  sec = ibase->state->secs[i];
+	      if(!(nosec & ((int64_t)1 << sec)))
+	      {
+	         *secs++ = sec;
+	         ++ret;
+	      }
+	  }
     }
     return ret;
 }

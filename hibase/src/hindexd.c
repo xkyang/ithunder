@@ -35,7 +35,6 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
-#define IBASE_DB_MAX  64
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
@@ -70,7 +69,7 @@ static unsigned char *httpd_index_html_code = NULL;
 static int  nhttpd_index_html_code = 0;
 static SBASE *sbase = NULL;
 static IBASE *ibase = NULL;
-static IBASE *pools[IBASE_DB_MAX];
+static IBASE *pools[IB_DB_MAX];
 static SERVICE *httpd = NULL;
 static SERVICE *indexd = NULL;
 static SERVICE *queryd = NULL;
@@ -174,11 +173,9 @@ static char *e_argvs[] =
 #define E_ARGV_SECID        40
     "secblock",             
 #define E_ARGV_SECBLOCK     41 
-    "dbblock",             
-#define E_ARGV_DBBLOCK      42 
     ""
 };
-#define  E_ARGV_NUM         43
+#define  E_ARGV_NUM         42
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -273,7 +270,7 @@ int indexd_index_handler(CONN *conn)
                 {
                     db = pools[0];
                     dbid = (int)docheader->dbid;
-                    if(dbid >= 0 && dbid < IBASE_DB_MAX)
+                    if(dbid >= 0 && dbid < IB_DB_MAX)
                     {
                         if(pools[dbid] == NULL)
                         {
@@ -310,7 +307,7 @@ err_end:
 /* multi query & merge */
 void indexd_query_handler(void *args)
 {
-    int64_t score = 0, id = 0, xlong = 0, xdata = 0, secblock = 0;
+    int64_t score = 0, id = 0, xlong = 0, xdata = 0;
     char line[sizeof(IHEAD) + sizeof(IRES)], buf[HTTP_BUF_SIZE], *summary = NULL, *p = NULL;
     ICHUNK *ichunk = NULL, *xchunk = NULL;
     int i = 0, secid = 0, n = 0, x = 0, ret = -1;
@@ -332,20 +329,16 @@ void indexd_query_handler(void *args)
         {
             i = --(qtask->qsecs);
             secid =  qtask->secs[i];
-            secblock = (int64_t)1 << secid;
         }
         pthread_mutex_unlock(&qtask->mutex);
         xchunk = qtask->chunk;
-		if((pquery->secblock_filter & secblock) == 0)
+        if(pquery->nquerys > 0) 
+        {
+           ichunk = ibase_bquery(db, pquery, secid);
+        }
+        else 
 		{
-          if(pquery->nquerys > 0) 
-          {
-            ichunk = ibase_bquery(db, pquery, secid);
-          }
-          else 
-		  {
-            ichunk = ibase_query(db, pquery, secid);
-		  }
+           ichunk = ibase_query(db, pquery, secid);
 		}
         pthread_mutex_lock(&qtask->mutex);
         if(ichunk)
@@ -472,38 +465,44 @@ void indexd_query_handler(void *args)
                 if((pquery->from + pquery->count) > res->count)
                     qset.count = res->count - pquery->from;
                 x = pquery->from;
-                if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
-                        && (conn = httpd->findconn(httpd, qtask->index))
-                        &&  conn == qtask->conn
+                if((conn = httpd->findconn(httpd, qtask->index)) && (conn == qtask->conn))
+				{
+                   if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
                         && (block = conn->newchunk(conn, n)))
-                {
-                    summary = block->data; 
-                    qset.nqterms = pquery->nqterms;
-                    memcpy(qset.qterms, pquery->qterms, pquery->nqterms * sizeof(QTERM));
-                    memcpy(qset.displaylist, pquery->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
-                    memcpy(&(qset.res), res, sizeof(IRES));
-                    records = &(xchunk->records[x]);
-                    if((n = ibase_read_summary(db, &qset, records, summary, 
-                                    highlight_start, highlight_end)) > 0)
-                    {
-                        p = buf;
-                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
-                                "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n", 
-                                http_default_charset, n);
-                        conn->push_chunk(conn, buf, (p - buf));
-                        if((ret = conn->send_chunk(conn, block, n)) != 0)
-                            conn->freechunk(conn,block);
-                    }
-                    else
-                    {
-                        conn->freechunk(conn,block);
-                        ret = -1;
-                    }
-                    if(ret == -1) 
-                    {
-                        conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
-                    }
-                }
+                   {
+	                    summary = block->data; 
+	                    qset.nqterms = pquery->nqterms;
+	                    memcpy(qset.qterms, pquery->qterms, pquery->nqterms * sizeof(QTERM));
+	                    memcpy(qset.displaylist, pquery->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
+	                    memcpy(&(qset.res), res, sizeof(IRES));
+	                    records = &(xchunk->records[x]);
+	                    if((n = ibase_read_summary(db, &qset, records, summary, 
+	                                    highlight_start, highlight_end)) > 0)
+	                    {
+	                        p = buf;
+	                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
+	                                "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n", 
+	                                http_default_charset, n);
+	                        conn->push_chunk(conn, buf, (p - buf));
+	                        if((ret = conn->send_chunk(conn, block, n)) != 0)
+	                            conn->freechunk(conn,block);
+	                    }
+	                    else
+	                    {
+	                        conn->freechunk(conn,block);
+	                        ret = -1;
+	                    }
+	                    if(ret == -1) 
+	                    {
+	                        conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
+	                    }
+                   }
+				   else
+				   {
+	                   ret = -1;
+					   conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
+				   }
+				}
             }
             else
             {
@@ -638,7 +637,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         if(chunk->ndata == sizeof(IQUERY))
                         {
                             pquery = (IQUERY *)chunk->data; 
-                            if(pquery->dbid > 0 && pquery->dbid < IBASE_DB_MAX) 
+                            if(pquery->dbid > 0 && pquery->dbid < IB_DB_MAX) 
                                 db = pools[pquery->dbid];
                             else db = ibase;
                             if(pquery->secid == -1)
@@ -654,7 +653,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                 }
                                 pthread_mutex_unlock(&gmutex);
                                 if(qtask && (qtask->db = db) 
-                                        && (qtask->nsecs = ibase_get_secs(db, qtask->secs)) > 0)
+                                        && (qtask->nsecs = ibase_get_secs(db, pquery->secblock_filter, qtask->secs)) > 0)
                                 {
                                     memcpy(&(qtask->query), pquery, sizeof(IQUERY));
                                     memcpy(&(qtask->req), req, sizeof(IHEAD));
@@ -734,7 +733,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             records = (IRECORD *)(chunk->data + sizeof(IQSET));
                             res = &(qset->res);
                             len = sizeof(IHEAD) + IB_SUMMARY_MAX * qset->count;
-                            if(res->dbid > 0 && res->dbid < IBASE_DB_MAX) db = pools[res->dbid];
+                            if(res->dbid > 0 && res->dbid < IB_DB_MAX) db = pools[res->dbid];
                             else db = ibase;
                             if((block = conn->newchunk(conn, len)))
                             {
@@ -894,7 +893,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, *secblock = NULL, *dbblock = NULL, 
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, *secblock = NULL,
          *geofilter = NULL, *keys = NULL, *keyslist[IB_IDX_MAX], *notlist[IB_IDX_MAX];
     char *orderby = NULL;
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
@@ -1042,9 +1041,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         case E_ARGV_SECBLOCK:
                             secblock = p;
                             break;
-                        case E_ARGV_DBBLOCK:
-                            dbblock = p;
-                            break;
                         default :
                             break;
                     }
@@ -1067,7 +1063,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             conn->xids[8] = 0;
             conn->xids[9] = 0;
         }
-        if(query->dbid < 0 || query->dbid > IBASE_DB_MAX) 
+        if(query->dbid < 0 || query->dbid > IB_DB_MAX) 
         {
             WARN_LOGGER(ibase->logger, "Invalid DBID：%d", query->dbid);
             query->dbid = 0;
@@ -1164,24 +1160,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
-        /*dbblock */
-        if((p = dbblock))
-        {
-            i = 0;
-            while(*p != '\0') 
-            {
-                last = p;
-                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
-                if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IBASE_DB_MAX) 
-                {
-                    query->dbblock_filter |= (int64_t)1 << i;
-                    //fprintf(stdout, "dbblock:%d\n", i);
-                }
-                while(*p >= '0' && *p <= '9')++p;
-                ++i;
-                if(p == last)break;
-            }
-        }
         /*catblock */
         if((p = catblock))
         {
@@ -1237,7 +1215,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
-        if(query->dbid > 0 && query->dbid < IBASE_DB_MAX) 
+        if(query->dbid > 0 && query->dbid < IB_DB_MAX) 
             db = pools[query->dbid];
         else db = ibase;
         if(db == NULL) return ret;
@@ -1577,7 +1555,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         if(booland > 0) query->flag |= IB_QUERY_BOOLAND;
         if(query_str)
         {
-            ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld secblock:%lld dbblock:%lld norderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), LL64(query->secblock_filter),LL64(query->dbblock_filter), norderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
+            ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld secblock:%lld norderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), LL64(query->secblock_filter), norderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
         }
         if(nkeys > 0)
         {
@@ -1626,7 +1604,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
         //TIMER_INIT(timer);
         if(query && query->from < query->ntop && query->count > 0)
         {
-            if(query->dbid > 0 && query->dbid < IBASE_DB_MAX) 
+            if(query->dbid > 0 && query->dbid < IB_DB_MAX) 
                 db = pools[query->dbid];
             else db = ibase;
             if(query->secid == -1)
@@ -1638,7 +1616,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                 }
                 pthread_mutex_unlock(&gmutex);
                 if(qtask && (qtask->db = db) 
-                        && (qtask->nsecs = ibase_get_secs(db, qtask->secs)) > 0)
+                        && (qtask->nsecs = ibase_get_secs(db, query->secblock_filter, qtask->secs)) > 0)
                 {
                     memcpy(&(qtask->query), query, sizeof(IQUERY));
                     qtask->qsecs = qtask->nsecs;
@@ -1850,7 +1828,7 @@ int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chu
                         while(*s != ',' && *s != ';' && s < end)++s;
                         ++s;
                     }
-                    if(dbid > 0 && dbid < IBASE_DB_MAX) db = pools[dbid];
+                    if(dbid > 0 && dbid < IB_DB_MAX) db = pools[dbid];
                     else db = ibase;
                     if((n = i) > 0 && (len = ibase_bound_items(db, n)) > 0)
                     {
@@ -1992,9 +1970,9 @@ int sbase_initialize(SBASE *sbase, char *conf)
         fprintf(stderr, "Initialize ibase failed, %s", strerror(errno));
         _exit(-1);
     }
-    memset(pools, 0, sizeof(IBASE *) * IBASE_DB_MAX);
+    memset(pools, 0, sizeof(IBASE *) * IB_DB_MAX);
     pools[0] = ibase_init_db(0);
-    for(i = 1; i < IBASE_DB_MAX; i++)
+    for(i = 1; i < IB_DB_MAX; i++)
     {
         sprintf(path, "%s/%d", ibase_basedir, i);
         if(lstat(path, &st) == 0 && S_ISDIR(st.st_mode))
@@ -2259,7 +2237,7 @@ int main(int argc, char **argv)
     }
     pthread_mutex_destroy(&gmutex);
     xmm_free(tasks, sizeof(QTASK) * IBASE_TASKS_MAX);
-    for(i = 0; i < IBASE_DB_MAX; i++)
+    for(i = 0; i < IB_DB_MAX; i++)
     {
         if(pools[i]) ibase_clean(pools[i]);
     }
