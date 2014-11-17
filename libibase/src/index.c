@@ -164,7 +164,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
                     last_docid = 0;
-                    if(mdb_get_tag(index, termid, &last_docid) == 0)
+                    if(mdb_get_tag(PMDB(index), termid, &last_docid) == 0)
                         ndocid = docid - last_docid;
                     else
                     {
@@ -202,6 +202,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         if(data){free(data); data = NULL;}
                         _exit(-1);
                     }
+					else
+					{
+                       ACCESS_LOGGER(ibase->logger, "INDEX-STR{%.*s} termid:%d in doc:%d/%lld/%d", termlist[i].term_len, term, termid, 
+							        docid,IBLL(docheader->globalid),ndocid);
+					}
                     mdb_set_tag(PMDB(index), termid, docid);
                     if(data){xmm_free(data, ndata); data = NULL;}
                 }
