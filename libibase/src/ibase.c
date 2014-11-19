@@ -869,6 +869,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             continue;
                         }
                         nterm = cur->len;
+                        ACCESS_LOGGER(ibase->logger, "seg-result-1:|%.*s| len:%d in query_str:%s ", nterm, s, nterm, query_str);
                         if(last == cur->off) prevnext = 1;
                         else prevnext = 0;
                         last = cur->off + cur->len;
@@ -884,11 +885,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                 if(*((unsigned char *)pp) > 127)
                                 {
                                     n = 0;
-                                    if(*((unsigned char*)s) >= 252) n = 6;
-                                    else if(*((unsigned char *)s) >= 248) n = 5;
-                                    else if(*((unsigned char *)s) >= 240) n = 4;
-                                    else if(*((unsigned char *)s) >= 224) n = 3;
-                                    else if(*((unsigned char *)s) >= 192) n = 2;
+                                    if(*((unsigned char*)pp) >= 252) n = 6;
+                                    else if(*((unsigned char *)pp) >= 248) n = 5;
+                                    else if(*((unsigned char *)pp) >= 240) n = 4;
+                                    else if(*((unsigned char *)pp) >= 224) n = 3;
+                                    else if(*((unsigned char *)pp) >= 192) n = 2;
                                     else n = 1;
                                     while(n-- > 0)*p++ = *pp++;
                                     size++;
@@ -902,6 +903,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         *p = '\0';
                         if((nterm = (p - line)) > 0)
                         {
+                            ACCESS_LOGGER(ibase->logger, "seg-result-2: %s len:%d in query_str:%s ", line, nterm, query_str);
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
