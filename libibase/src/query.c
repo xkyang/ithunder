@@ -439,7 +439,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ito = query->int_range_list[i].to;
                     k -= int_index_from;
                     k += IB_INT_OFF;
-                    if(k == min_set_fid) continue;
+                    //if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xint < ifrom) goto next;
@@ -474,7 +474,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     lto = query->long_range_list[i].to;
                     k -= long_index_from;
                     k += IB_LONG_OFF;
-                    if(k == min_set_fid) continue;
+                    //if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
@@ -509,7 +509,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     dto = query->double_range_list[i].to;
                     k -= double_index_from;
                     k += IB_DOUBLE_OFF;
-                    if(k == min_set_fid) continue;
+                    //if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xdouble = DMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xdouble < dfrom) goto next;

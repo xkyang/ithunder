@@ -398,6 +398,7 @@ fprintf(stdout,"find_slot(min:%d max:%d ret:%d ret-count:%d ret-min:%ND ret-max:
 	    }
         }
     }
+    fprintf(stdout,"find_slot(ret:%d ret-count:%d ret-min:%ND ret-max:%ND)\n",ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
     return ret;
 }
 
@@ -473,6 +474,7 @@ fprintf(stdout,"find_slot2(min:%d max:%d ret:%d ret-count:%d ret-min:%ND ret-max
 		    }
         }
     }
+    fprintf(stdout,"find_slot2(ret:%d ret-count:%d ret-min:%ND ret-max:%ND)\n",ret,imap->slots[ret].count,imap->slots[ret].min,imap->slots[ret].max);
     return ret;
 }
 
@@ -533,6 +535,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
         }
         //fprintf(stdout, "find_kv(%ND) min:%d max:%d count:%d ret:%d\n", key, imap->slots[k].min, imap->slots[k].max, imap->slots[k].count, ret);
     }
+    fprintf(stdout,"find_kv(key:%ND ret:%d ret-k:%ND)\n",key,ret,kvs[ret].key);
     return ret;
 }
 
@@ -592,6 +595,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
            }
         }
     }
+    fprintf(stdout,"find_kv2(key:%ND ret:%d ret-k:%ND)\n",key,ret,kvs[ret].key);
     return ret;
 }
 
