@@ -248,7 +248,7 @@ XNODE *xmap_pop(IBASE *ibase, XMAP *xmap)
     return pxnode;
 }
 
-void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_, 
+void ibase_unindex(IBASE *ibase, IHEADER *headers, ITERM *itermlist, XMAP *_xmap_, 
         int is_query_phrase, int qfhits, int _x_)
 {
     int _n_ = 0 , *_np_ = NULL;
@@ -289,6 +289,7 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
             itermlist[_x_].prevnext_size = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
         }
+        DEBUG_LOGGER(ibase->logger, "termid:%d docid:%d globalid:%lld status:%d crc:%d", itermlist[_x_].termid, itermlist[_x_].docid,  headers[(itermlist[_x_].docid)].globalid, headers[(itermlist[_x_].docid)].status, headers[(itermlist[_x_].docid)].crc);
         if(itermlist[_x_].prevnext_size > 0)
         {
             itermlist[_x_].sprevnext = itermlist[_x_].p;
@@ -467,6 +468,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             if((n = itermlist[i].mm.ndata = mdb_get_data(PMDB(index), itermlist[i].termid, &(itermlist[i].mm.data))) > 0)
             {
                 total += n;
+                DEBUG_LOGGER(ibase->logger, "read index[%d] %d bytes doc_max:%d", itermlist[i].termid, n, ibase->state->ids[secid]);
                 itermlist[i].p = itermlist[i].mm.data;
                 itermlist[i].end = itermlist[i].mm.data + itermlist[i].mm.ndata;
                 itermlist[i].docid = 0;
@@ -476,7 +478,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 itermlist[i].term_len = termstates[itermlist[i].termid].len;
                 MUTEX_UNLOCK(ibase->mutex_termstate);
                 x = i;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, headers, itermlist, xmap, is_query_phrase, query->qfhits, x);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }
         }
@@ -814,7 +816,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 }
                 //xnode->bitphrase[i] = 0;
                 //xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, headers, itermlist, xmap, is_query_phrase, query->qfhits, x);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }while(--i >= 0);
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
@@ -928,7 +930,7 @@ next:
                 x = xnode->hits[i];
                 xnode->bitphrase[i] = 0;
                 xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, headers, itermlist, xmap, is_query_phrase, query->qfhits, x);
             }while(--i >= 0);
         }
         TIMER_SAMPLE(timer);
