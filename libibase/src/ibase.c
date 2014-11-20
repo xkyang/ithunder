@@ -903,7 +903,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         *p = '\0';
                         if((nterm = (p - line)) > 0)
                         {
-                            ACCESS_LOGGER(ibase->logger, "seg-result-2: %s len:%d in query_str:%s ", line, nterm, query_str);
+                            ACCESS_LOGGER(ibase->logger, "seg-result-2:|%s| len:%d in query_str:%s ", line, nterm, query_str);
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
