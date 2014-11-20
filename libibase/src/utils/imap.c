@@ -514,6 +514,10 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
            }
            if((x = ret) >= 0 && x < n)
            {
+		       while(x < n && key > kvs[x].key)
+		       {
+		          ret = ++x;
+		       }
                while(x >= 0 && key <= kvs[x].key)
                {
                     ret = x--;
@@ -571,6 +575,10 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
            }
            if((x = ret) >= 0 && x < n)
            {
+		      if(x >= 0 && key < kvs[x].key)
+		      {
+		          ret = --x;
+		      }
               while(x < n && key >= kvs[x].key)
               {
                   ret = x++;

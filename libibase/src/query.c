@@ -345,6 +345,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                {
                     if((jj = query->int_inset_list[kk].field_id) >= int_index_from 
                         && jj < int_index_to && (jj += (IB_INT_OFF - int_index_from)) > 0
+                        /*second check map return value*/
+                        //&& jj != min_set_fid && ibase->state->mfields[secid][jj]
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->int_inset_list[kk].num) > 0))
                     {
@@ -375,6 +377,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                {
                     if((jj = query->long_inset_list[kk].field_id) >= long_index_from 
                         && jj < long_index_to && (jj += (IB_LONG_OFF - long_index_from)) > 0
+                        //&& jj != min_set_fid && ibase->state->mfields[secid][jj]
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->long_inset_list[kk].num) > 0))
                     {
@@ -405,6 +408,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                {
                     if((jj = query->double_inset_list[kk].field_id) >= double_index_from 
                         && jj < double_index_to && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0
+                        //&& jj != min_set_fid && ibase->state->mfields[secid][jj]
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->double_inset_list[kk].num) > 0))
                     {
