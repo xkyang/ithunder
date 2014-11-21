@@ -30,10 +30,13 @@ extern "C" {
 #define  HI_CHARSET_MAX         128
 #define  HI_IP_MAX              16
 #define  HI_TASKS_MAX           32
+#define  HI_DUMP_MAX            64
 #define  HI_LINE_SIZE           1024
 #define  HI_TERM_SIZE           96
 #define  HI_BSTERM_MAX          10000000
 #define  HI_BSTERM_BASE         100000
+#define  HI_SYNTERM_MAX          10000000
+#define  HI_SYNTERM_BASE         100000
 static char *server_type_list[] = {"DocNode", "ParserNode", "IndexNode"}; 
 #define  HI_SERVERLIST_NUM      2
 #define  HI_PHRASE_ENABELD      0x00
@@ -66,6 +69,8 @@ typedef struct _HITASK
     int    upover;
     int    nupdates;
     int    upcount;
+    off_t  synterm_mod_time;
+    off_t  synterm_last_time;
     off_t  bterm_mod_time;
     off_t  bterm_last_time;
 }HITASK;
@@ -82,14 +87,23 @@ typedef struct _HINODE
     char name[HI_NAME_MAX];
     HITASK tasks[HI_TASKS_MAX];
 }HINODE;
+typedef struct _HIDUMP
+{
+    int fd;
+    int bits;
+    uint32_t modtime;
+    uint32_t ltime;
+    off_t offset;
+    char file[FILE_PATH_MAX];
+}HIDUMP;
 /* histate */
 typedef struct _HISTATE
 {
-    off_t dump_offset;
-    off_t outdoc_offset;
     off_t bterm_mod_time;
-    int   ccompress_status;
-    int   phrase_status;
+    off_t synterm_mod_time;
+    int16_t   ccompress_status;
+    int16_t  phrase_status;
+    int   ntasks;
     int   taskqid;
     int   need_update_numbric;
     int   packettotal;
@@ -106,8 +120,10 @@ typedef struct _HISTATE
     int   double_index_from;
     int   double_index_count;
     int   bterm_id_max;
+    int   synterm_id_max;
+    uint32_t   stime;
     HINODE nodes[HI_NODE_MAX];
-    char    dumpfile[FILE_PATH_MAX];
+    HIDUMP dumps[HI_DUMP_MAX];
 }HISTATE;
 /* term node */
 typedef struct _PREVNEXT
@@ -206,6 +222,8 @@ typedef struct _HIDOC
     XMIO     xlongio;
     XMIO     xdoubleio;
     XMIO     bstermio;
+    XMIO     syntermio;
+    XMIO     stermio;
     MMTRIE  *map;
     HISTATE *state;
     void    *db;
@@ -216,8 +234,6 @@ typedef struct _HIDOC
     void    *qsegmentors[HI_SEGMENTORS_MAX];
     int     nqsegmentors;
     int     histatefd;
-    int     dumpfd;
-    int     outdocfd;
     MUTEX   *mutex;
     MUTEX   *mutex_segmentor;
     void    *logger;
@@ -229,9 +245,9 @@ typedef struct _HIDOC
     char    dict_file[FILE_PATH_MAX];
     char    dict_rules[FILE_PATH_MAX];
     
-    int (*set_basedir)(struct _HIDOC *, char *basedir);
-    int (*set_dump)(struct _HIDOC *, char *dump);
-    int (*get_dumpinfo)(struct _HIDOC *, char *out, char *end);
+    int (*set_basedir)(struct _HIDOC *, char *basedir, int ntasks);
+    int (*set_dump)(struct _HIDOC *, int no, char *dump);
+    int (*get_dumpinfo)(struct _HIDOC *, char *out);
     int (*set_int_index)(struct _HIDOC *, int int_index_from, int int_index_count);
     int (*set_long_index)(struct _HIDOC *, int long_index_from, int long_index_count);
     int (*set_double_index)(struct _HIDOC *, int double_index_from, int double_index_count);
@@ -242,8 +258,6 @@ typedef struct _HIDOC
     int (*resume)(struct _HIDOC *);
     int (*genindex)(struct _HIDOC *, HINDEX *hindex, FHEADER *fheader, IFIELD *fields, int nfields, 
             char *content, int ncontent, IBDATA *block);
-    int (*push_document)(struct _HIDOC *, IBDATA *block);
-    int (*pop_document)(struct _HIDOC *, HINDEX *hindex, IBDATA *block);
     int (*pop_packetid)(struct _HIDOC *, int nodeid, IPACKET *packet);
     int (*read_packet)(struct _HIDOC *, int packetid, char *data, int ndata);
     int (*add_node)(struct _HIDOC *, int type, char *name, int limit);
@@ -260,6 +274,10 @@ typedef struct _HIDOC
     int (*over_index)(struct _HIDOC *, int taskid, int id);
     int (*read_upindex)(struct _HIDOC *, int taskid, char *data, int *len, int *count);
     int (*over_upindex)(struct _HIDOC *, int taskid, int upid);
+    int (*set_synterm)(struct _HIDOC *, char **terms, int num);
+    int (*sync_synterms)(struct _HIDOC *);
+    int (*read_synterms)(struct _HIDOC *, int taskid, char *data, int len);
+    int (*over_synterms)(struct _HIDOC *, int taskid);
     int (*set_bterm)(struct _HIDOC *, char *, int nterm, int status);
     int (*update_bterm)(struct _HIDOC *, int termid, int status);
     int (*del_bterm)(struct _HIDOC *, int termid);
@@ -275,7 +293,7 @@ typedef struct _HIDOC
     int (*set_int_fields)(struct _HIDOC *, FXINT *list, int count);
     int (*set_long_fields)(struct _HIDOC *, FXLONG *list, int count);
     int (*set_double_fields)(struct _HIDOC *, FXDOUBLE *list, int count);
-    int (*parse_document)(struct _HIDOC *, HINDEX *hindex);
+    int (*parse_document)(struct _HIDOC *, int no, HINDEX *hindex);
     int (*parseHTML)(struct _HIDOC *, HINDEX *hindex, char *url, int date, 
             char *content, int ncontent, IBDATA *block);
     void (*clean)(struct _HIDOC *);

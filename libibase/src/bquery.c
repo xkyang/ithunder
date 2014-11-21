@@ -65,7 +65,7 @@ XMAP *ibase_pop_xmap(IBASE *ibase)
 do                                                                              \
 {                                                                               \
     _m_ = old->nhits++;                                                         \
-    old->nvhits += pxnode->nvhits;                                              \
+    if(!(pxnode->bithits & old->bithits)) old->nvhits += pxnode->nvhits;        \
     old->hits[_m_] = pxnode->which;                                             \
     old->bithits |= pxnode->bithits;                                            \
     old->bitfields |= pxnode->bitfields;                                        \
@@ -269,7 +269,7 @@ void ibase_unindex(IBASE *ibase, IHEADER *headers, ITERM *itermlist, XMAP *_xmap
             itermlist[_x_].docid +=  itermlist[_x_].ndocid;
             _np_ = &(itermlist[_x_].term_count);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
-            _np_ = &(itermlist[_x_].no);
+            _np_ = (int *)&(itermlist[_x_].no);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
             _np_ = &(itermlist[_x_].fields);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
@@ -303,14 +303,14 @@ void ibase_unindex(IBASE *ibase, IHEADER *headers, ITERM *itermlist, XMAP *_xmap
         }
         itermlist[_x_].xnode.which = _x_;
         itermlist[_x_].xnode.docid = itermlist[_x_].docid;
-        itermlist[_x_].xnode.bithits = 1 << _x_;
+        itermlist[_x_].xnode.bithits = 1 << itermlist[_x_].synno;
         itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
         itermlist[_x_].xnode.bithit = 0;
         itermlist[_x_].xnode.bitnot = 0;
         if((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit) 
-            itermlist[_x_].xnode.bithit |= 1 << _x_;
+            itermlist[_x_].xnode.bithit |= 1 << itermlist[_x_].synno;
         if(itermlist[_x_].fields & itermlist[_x_].bitnot) 
-            itermlist[_x_].xnode.bitnot |= 1 << _x_;
+            itermlist[_x_].xnode.bitnot |= 1 << itermlist[_x_].synno;
         if(itermlist[_x_].fields & qfhits)
             itermlist[_x_].xnode.nhitfields = 1;
         else
@@ -391,9 +391,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         double_index_to = double_index_from + ibase->state->double_index_fields_num;
         if((query->flag & IB_QUERY_PHRASE)) is_query_phrase = 1;
         nqterms = query->nqterms;
-        if(query->nqterms > IB_QUERY_MAX) nqterms = IB_QUERY_MAX;
+        if(query->nqterms > IB_QUERY2_MAX) nqterms = IB_QUERY2_MAX;
         nquerys = query->nvqterms;
-        if(query->nvqterms > IB_QUERY_MAX) nquerys = IB_QUERY_MAX;
+        if(query->nvqterms > IB_QUERY2_MAX) nquerys = IB_QUERY2_MAX;
         if(topmap == NULL || fmap == NULL || xmap == NULL 
                 || itermlist == NULL || headers == NULL) goto end;
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
@@ -450,13 +450,15 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         if(gid > 0){groupby = ibase_pop_mmx(ibase);};
         TIMER_INIT(timer);
         //read index 
+        nn = nqterms;
         for(i = 0; i < nqterms; i++)
         {
             itermlist[i].idf = query->qterms[i].idf;
             itermlist[i].termid = query->qterms[i].id;
+            itermlist[i].synno = query->qterms[i].synno;
             itermlist[i].bithit = query->qterms[i].bithit;
             itermlist[i].bitnot = query->qterms[i].bitnot;
-            bithit |= 1 << i;
+            bithit |= 1 << query->qterms[i].synno;
             if((query->qterms[i].flag & QTERM_BIT_DOWN) && query->qweight) 
             {
                 itermlist[i].weight = 0;
@@ -481,6 +483,34 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 ibase_unindex(ibase, headers, itermlist, xmap, is_query_phrase, query->qfhits, x);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }
+            /* synonym term */
+            /*
+            if((query->qterms[i].flag & QTERM_BIT_SYN) && nn < IB_QUERY2_MAX)
+            {
+                if((n = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, syns)) > 0)
+                {
+                    n /= sizeof(int32_t);
+                    for(j = 0; j < n; j++)
+                    {
+                        k = syns[j];
+                        memcpy(&(itermlist[nn]), &(itermlist[i]), sizeof(ITERM)); 
+                        if(k != itermlist[i].termid && (itermlist[nn].mm.ndata = mdb_get_data(PMDB(index), k, &(itermlist[nn].mm.data))) > 0)
+                        {
+                            total += itermlist[nn].mm.ndata;
+                            itermlist[nn].p = itermlist[nn].mm.data;
+                            itermlist[nn].end = itermlist[nn].mm.data + itermlist[nn].mm.ndata;
+                            itermlist[nn].synno = i;
+                            MUTEX_LOCK(ibase->mutex_termstate);
+                            termstates = (TERMSTATE *)(ibase->termstateio.map);
+                            itermlist[nn].term_len = termstates[k].len;
+                            MUTEX_UNLOCK(ibase->mutex_termstate);
+                            ibase_unindex(ibase, headers, itermlist, xmap, is_query_phrase, query->qfhits, nn);
+                            ++nn;
+                        }
+                    }
+                }
+            }
+            */
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);
@@ -520,7 +550,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
                 goto next;
             if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
-            && (query->nqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
+            && (query->nvqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {

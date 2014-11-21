@@ -44,6 +44,7 @@
 #define HINDEX_NODEMAP_NAME     "hindex.namemap"
 #define HINDEX_MMQUEUE_NAME     "hindex.mmqueue"
 #define HINDEX_BSTERM_NAME      "hindex.bsterm"
+#define HINDEX_SYNTERM_NAME     "hindex.synterm"
 #define HINDEX_DB_DIR           "db"
 #define HINDEX_UPDATE_DIR       "update"
 #define HIDOC_GLOBALID_DEFAULT  200000000
@@ -124,7 +125,7 @@ int pmkdir(char *path)
 }
 
 /* set document basedir  */
-int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
+int hidoc_set_basedir(HIDOC *hidoc, char *basedir, int ntasks)
 {
     char path[FILE_PATH_MAX];//, *p = NULL;
     int i = 0, j = 0, taskid = 0;
@@ -152,9 +153,6 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
             _exit(-1);
             return -1;
         }
-        /* hindex doc */
-        //sprintf(path, "%s/%s", basedir, HINDEX_DOC_NAME);
-        //hidoc->outdocfd = open(path, O_CREAT|O_RDWR|O_APPEND, 0644);
         /* mmqueue */
         sprintf(path, "%s/%s", basedir, HINDEX_MMQUEUE_NAME);
         hidoc->mmqueue = mmqueue_init(path);
@@ -204,6 +202,7 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
                     }
                 }
             }
+            hidoc->state->ntasks = ntasks;
         }
 #ifdef  _SRC_
         sprintf(path, "%s/%s", basedir, HINDEX_SRC_NAME);
@@ -249,6 +248,31 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
             fprintf(stderr, "open bsterm file(%s) failed, %s\n", path, strerror(errno));
             _exit(-1);
         }
+        /* synterm file */
+        sprintf(path, "%s/%s", basedir, HINDEX_SYNTERM_NAME);
+        if((hidoc->syntermio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
+                && fstat(hidoc->syntermio.fd, &st) == 0)
+        {
+            hidoc->syntermio.end = st.st_size;
+            size = sizeof(SYNTERM) * HI_SYNTERM_MAX;
+            if(st.st_size > size) size = st.st_size;
+            if((hidoc->syntermio.map = (char *)mmap(NULL, size, PROT_READ|PROT_WRITE, 
+                            MAP_SHARED, hidoc->syntermio.fd, 0)) 
+                    && hidoc->syntermio.map != (void *)-1)
+            {
+                hidoc->syntermio.size = size;
+            }
+            else
+            {
+                fprintf(stderr, "mmap synterm file (%s) failed, %s\n", path, strerror(errno));
+                _exit(-1);
+            }
+        }
+        else
+        {
+            fprintf(stderr, "open synterm file(%s) failed, %s\n", path, strerror(errno));
+            _exit(-1);
+        }
         /* index */
         sprintf(path, "%s/%s", basedir, HINDEX_XINDEX_NAME);
         if((hidoc->xindexio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
@@ -277,6 +301,7 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
         //hidoc_set_int_index(hidoc, hidoc->state->int_index_from, hidoc->state->int_index_count);
         //hidoc_set_long_index(hidoc, hidoc->state->long_index_from, hidoc->state->long_index_count);
         //hidoc_set_double_index(hidoc, hidoc->state->double_index_from, hidoc->state->double_index_count);
+        hidoc->state->stime = (uint32_t)time(NULL);
         return 0;
     }
     return -1;
@@ -406,65 +431,72 @@ int hidoc_set_double_index(HIDOC *hidoc, int double_index_from, int double_index
 }
 
 /* check dump */
-int hidoc__check__dump(HIDOC *hidoc)
+int hidoc_check_dump(HIDOC *hidoc, int no)
 {
     int ret = -1;
-    if(hidoc && hidoc->dumpfd <= 0 && hidoc->state 
-            && strlen(hidoc->state->dumpfile) > 0)
+
+    if(hidoc->state->dumps[no].ltime > hidoc->state->stime
+            && hidoc->state->dumps[no].modtime > hidoc->state->stime)
     {
-        ret = hidoc->dumpfd = open(hidoc->state->dumpfile, O_CREAT|O_RDONLY, 0644);
+        close(hidoc->state->dumps[no].fd);
+        hidoc->state->dumps[no].fd = 0;
+        hidoc->state->dumps[no].offset = 0;
+        hidoc->state->dumps[no].ltime = 0;
+        hidoc->state->dumps[no].modtime = 0;
     }
-    return ret;
+    if(hidoc->state->dumps[no].ltime < hidoc->state->stime 
+            && strlen(hidoc->state->dumps[no].file) > 0)
+    {
+        hidoc->state->dumps[no].fd = open(hidoc->state->dumps[no].file,O_CREAT|O_RDONLY, 0644);
+        hidoc->state->dumps[no].ltime = (uint32_t)time(NULL);
+    }
+    return (ret = hidoc->state->dumps[no].fd);
 }
 
 /* reset dump */
-int hidoc__set__dump(HIDOC *hidoc, char *dumpfile)
+int hidoc_set_dump(HIDOC *hidoc, int no, char *dumpfile)
 {
     int ret = -1, fd = 0;
-
-    if(hidoc && dumpfile && (fd = open(dumpfile, O_RDONLY, 0644)) > 0)
-    {
-        if(hidoc->dumpfd > 0) 
-        {
-            WARN_LOGGER(hidoc->logger, "reset_dumpi(%s)", dumpfile);
-            close(hidoc->dumpfd);
-            hidoc->dumpfd = 0;
-        }
-        strcpy(hidoc->state->dumpfile, dumpfile);
-        hidoc->state->dump_offset = 0;
-        ret = hidoc->dumpfd = fd;
-    }
-    return ret;
-}
-
-/* reset dump */
-int hidoc_set_dump(HIDOC *hidoc, char *dumpfile)
-{
-    int ret = -1;
-    if(hidoc && dumpfile)
+    if(hidoc && no >= 0 && no < HI_DUMP_MAX && dumpfile)
     {
         MUTEX_LOCK(hidoc->mutex);
-        ret = hidoc__set__dump(hidoc, dumpfile);
+        if(strlen(dumpfile) > 0 && (fd = open(dumpfile, O_RDONLY, 0644)) > 0)
+        {
+            ret = fd;
+            strcpy(hidoc->state->dumps[no].file, dumpfile);
+            hidoc->state->dumps[no].modtime = (uint32_t)time(NULL);
+            close(fd);
+        }
         MUTEX_UNLOCK(hidoc->mutex);
     }
     return ret;
 }
 
 /* get dump info */
-int hidoc_get_dumpinfo(HIDOC *hidoc, char *out, char *end)
+int hidoc_get_dumpinfo(HIDOC *hidoc, char *out)
 {
-    int ret = -1, n = 0;
+    int ret = -1, n = 0, i = 0;
+    char *p = NULL, *pp = NULL;
     struct stat st = {0};
-    char *p = NULL;
 
-    if(hidoc && (p = out) && hidoc->state 
-            && (n = strlen(hidoc->state->dumpfile))
-            && (end - out) > (n + 64)
-            && stat(hidoc->state->dumpfile, &st) == 0)
+    if(hidoc && (p = out) && hidoc->state) 
     {
-        ret = sprintf(p, "({\"size\":\"%lld\",\"offset\":\"%lld\",\"source\":\"%s\"})", 
-                (long long int)st.st_size, (long long int)hidoc->state->dump_offset, 
-                hidoc->state->dumpfile);
+        p += sprintf(p, "({\"ntasks\":\"%d\",\"tasks\":{", hidoc->state->ntasks);
+        pp = p;
+        for(i = 0; i < hidoc->state->ntasks; i++)
+        {
+            if((n = strlen(hidoc->state->dumps[i].file)) > 0
+                    && stat(hidoc->state->dumps[i].file, &st) == 0)
+            {
+                //s = hidoc->state->dumps[i].file + n;
+                p +=sprintf(p,"\"%d\":{\"size\":\"%lld\",\"offset\":\"%lld\",\"source\":\"%s\"},", 
+                    i, (long long int)st.st_size, (long long int)hidoc->state->dumps[i].offset, 
+                    hidoc->state->dumps[i].file);
+            }
+        }
+        if(p > pp) --p;
+        p += sprintf(p, "}})");
+        ret = p - out;
     }
     return ret;
 }
@@ -616,7 +648,19 @@ do                                                                              
                 hidoc->bstermio.end - hidoc->bstermio.old);                                 \
     }                                                                                       \
 }while(0)
-
+#define CHECK_SYNTERMIO(hidoc, xid)                                                         \
+do                                                                                          \
+{                                                                                           \
+    if((off_t)xid*(off_t)sizeof(SYNTERM) >= hidoc->syntermio.end)                           \
+    {                                                                                       \
+        hidoc->syntermio.old = hidoc->syntermio.end;                                        \
+        hidoc->syntermio.end = (xid / HI_SYNTERM_BASE)+1;                                   \
+        hidoc->syntermio.end *= (off_t)(sizeof(SYNTERM) * (off_t)HI_SYNTERM_BASE);          \
+        if(ftruncate(hidoc->syntermio.fd, hidoc->syntermio.end) != 0)break;                 \
+        memset(hidoc->syntermio.map + hidoc->syntermio.old, 0,                              \
+                hidoc->syntermio.end - hidoc->syntermio.old);                               \
+    }                                                                                       \
+}while(0)
 #define CHECK_PACKETIO(hidoc)                                                               \
 do                                                                                          \
 {                                                                                           \
@@ -698,7 +742,124 @@ do                                                                              
                 hidoc->xdoubleio.end - hidoc->xdoubleio.old);                           \
     }                                                                                   \
 }while(0)
-/* set block terms status */
+
+/* update synterm modtime */
+int hidoc_sync_synterms(HIDOC *hidoc)
+{
+    struct timeval tv = {0};
+    int ret = -1;
+
+    if(hidoc && hidoc->state)
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        gettimeofday(&tv, NULL);
+        hidoc->state->synterm_mod_time = (off_t)tv.tv_sec * (off_t)10000000 + (off_t)tv.tv_usec;
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
+/* read synterm */
+int hidoc_read_synterms(HIDOC *hidoc, int taskid, char *data, int ndata)
+{
+    int k = 0, nodeid = -1, left = 0, ret = -1;
+    SYNTERM *synterms = NULL;
+    HINODE *nodes = NULL;
+    HITASK *tasks = NULL;
+    char *p = NULL;
+
+    if(hidoc && hidoc->state && (p = data) && (left = ndata) > 0 && hidoc->state->synterm_id_max > 0
+            && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        k = taskid % HI_TASKS_MAX;
+        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
+                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
+                && tasks[k].status > 0 && tasks[k].synterm_mod_time < hidoc->state->synterm_mod_time
+                && (synterms = (SYNTERM *)(hidoc->syntermio.map)))
+        {
+            if(left >= hidoc->state->synterm_id_max * sizeof(SYNTERM))
+            {
+                ret = hidoc->state->synterm_id_max * sizeof(SYNTERM);
+                memcpy(data, &(synterms[1]), ret);
+            }
+            tasks[k].synterm_last_time = hidoc->state->synterm_mod_time;
+        }
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
+/* over update synterm */
+int hidoc_over_synterms(HIDOC *hidoc, int taskid)
+{
+    int k = 0, nodeid = -1, ret = -1;
+    HINODE *nodes = NULL;
+    HITASK *tasks = NULL;
+
+    if(hidoc && hidoc->state && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        k = taskid % HI_TASKS_MAX;
+        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
+                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
+                && tasks[k].status > 0)
+        {
+            tasks[k].synterm_mod_time = tasks[k].synterm_last_time;
+            ret = 0;
+        }
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
+/* set synonym terms status */
+int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
+{
+    int ret = -1, i = 0, termid = 0, xid = 0, id = 0, n = 0;
+    SYNTERM synterm = {0}, *synterms = NULL;
+    char line[HI_LINE_SIZE], *p = NULL;
+
+    if(hidoc && terms && num > 0)
+    {
+        for(i = 0; i < num; i++)
+        {
+            p = terms[i];
+            if(p && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), p, strlen(p))) > 0)
+            {
+                synterm.syns[i] = termid;
+                n = sprintf(line, "s:%d", termid);
+                if((id = mmtrie_get((MMTRIE *)(hidoc->map), line, n)) > 0)
+                {
+                    xid = id;
+                }
+            }
+        }
+        if(xid == 0)
+        {
+            MUTEX_LOCK(hidoc->mutex);
+            xid = ++(hidoc->state->synterm_id_max);
+            CHECK_SYNTERMIO(hidoc, xid);
+            MUTEX_UNLOCK(hidoc->mutex);
+            for(i = 0; i < num; i++)
+            {
+                n = sprintf(line, "s:%d", synterm.syns[i]);
+                id = mmtrie_add((MMTRIE *)(hidoc->map), line, n, xid);
+            }
+        }
+        if(xid > 0 && (synterms = (SYNTERM *)(hidoc->syntermio.map)))
+        {
+            synterm.synid = synterms[xid].synid;
+            if(!synterm.synid) synterm.synid = synterm.syns[0];
+            synterm.count = num;
+            memcpy(&(synterms[xid]), &synterm, sizeof(SYNTERM));
+            //fprintf(stdout, "%s::%d term:%s synid:%d xid:%d count:%d\n", __FILE__, __LINE__, terms[0], synterm.synid, xid, num);
+            ret = xid;
+        }
+    }
+    return ret;
+}
+
 int hidoc_set_bterm(HIDOC *hidoc, char *term, int nterm, int status)
 {
     int ret = -1, termid = 0, xid = 0, n = 0;
@@ -872,7 +1033,7 @@ int hidoc_read_bterms(HIDOC *hidoc, int taskid, char *data, int ndata)
                     n = bsterms[i].bterm.len + sizeof(BTERM);
                     if(left < n)
                     {
-                        WARN_LOGGER(hidoc->logger, "Nospace bsterms[%d] taskid:%d", i, taskid);
+                        WARN_LOGGER(hidoc->logger, "No space left bsterms[%d] taskid:%d", i, taskid);
                         goto err;
                     }
                     else
@@ -1284,41 +1445,6 @@ int hidoc_over_index(HIDOC *hidoc, int taskid, int id)
     }
     return ret;
 
-}
-
-/* pop document */
-int hidoc_pop_document(HIDOC *hidoc, HINDEX *hindex, IBDATA *block)
-{
-    //DOCHEADER *docheader = NULL;
-
-    if(hidoc && hindex && hidoc->state && block && hidoc->outdocfd > 0)
-    {
-	    MUTEX_LOCK(hidoc->mutex);
-        //DEBUG_LOGGER(hidoc->logger, "ready for pop_document() offset:%lld", hidoc->state->outdoc_offset);
-        if(lseek(hidoc->outdocfd,  hidoc->state->outdoc_offset, SEEK_SET) >= 0
-            && read(hidoc->outdocfd, &(block->ndata), sizeof(int)) > 0
-            && block->ndata > 0)
-        {
-            //DEBUG_LOGGER(hidoc->logger, "ready for pop_document() len:%d", block->ndata);
-            hidoc->state->outdoc_offset += (off_t)sizeof(int);
-            REALLOC(hindex->out, hindex->nout, block->ndata);
-            if((block->data = hindex->out) 
-                    &&  lseek(hidoc->outdocfd,  hidoc->state->outdoc_offset, SEEK_SET) >= 0
-                    && read(hidoc->outdocfd, block->data, block->ndata) > 0)
-            {
-                //DOCHEADER *docheader = (DOCHEADER *)block->data;
-                //DEBUG_LOGGER(hidoc->logger, "pop_document(%d) len:%d", docheader->docid, block->ndata);
-                hidoc->state->outdoc_offset += (off_t)(block->ndata);
-            }
-            else
-            {
-                hidoc->state->outdoc_offset -= (off_t)sizeof(int);
-            }
-        }
-	    MUTEX_UNLOCK(hidoc->mutex);
-        return 0;
-    }
-    return -1;
 }
 
 /* parse HTML document */
@@ -2170,34 +2296,30 @@ end:
 }
 
 /* parse hispider document */
-int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
+int hidoc_parse_document(HIDOC *hidoc, int no, HINDEX *hindex)
 {
     char *content = NULL, *data = NULL, path[FILE_PATH_MAX];
     int *xint = NULL, n = 0, ret = -1, is_ok = 0, ncontent = 0;
     double *xdouble = NULL;
     int64_t *xlong = NULL;
-    struct stat st =  {0};
     IFIELD *fields = NULL;
     FHEADER fheader = {0};
     IBDATA block = {0};
 
-    if(hidoc && hidoc->state && hindex) 
+    if(hidoc && hidoc->state && hindex && no >= 0 && no < HI_DUMP_MAX) 
     {
-	    MUTEX_LOCK(hidoc->mutex);
-        if(hidoc->dumpfd <= 0 || fstat(hidoc->dumpfd, &st) != 0 
-                || hidoc->state->dump_offset >= st.st_size) 
+        if(hidoc_check_dump(hidoc, no) < 0)
         {
-            hidoc__check__dump(hidoc);
-            //FATAL_LOGGER(hidoc->logger, "Invalid offset:%lld file_size:%lld", (long long)hidoc->state->dump_offset, (long long)st.st_size);
+            FATAL_LOGGER(hidoc->logger, "Invalid dumpfile[%d:%s]", no, hidoc->state->dumps[no].file);
             goto end;
         }
 		memset(&fheader,0,sizeof(FHEADER));
-        if(lseek(hidoc->dumpfd,  (off_t)hidoc->state->dump_offset, 
-                    SEEK_SET) == hidoc->state->dump_offset 
-                && (n = read(hidoc->dumpfd, &fheader, sizeof(FHEADER))) == sizeof(FHEADER))
+        if(lseek(hidoc->state->dumps[no].fd,  (off_t)hidoc->state->dumps[no].offset,SEEK_SET) 
+                ==   hidoc->state->dumps[no].offset && (n = read(hidoc->state->dumps[no].fd, 
+                        &fheader, sizeof(FHEADER))) == sizeof(FHEADER))
         {
-            DEBUG_LOGGER(hidoc->logger, "offset:%lld fheader{status:%d globalid:%lld category:%lld rank:%f slevel:%d size:%d", LL64(hidoc->state->dump_offset), fheader.status, LL64(fheader.globalid), LL64(fheader.category), fheader.rank, fheader.slevel, fheader.size);
-            hidoc->state->dump_offset += (off_t)sizeof(FHEADER);
+            DEBUG_LOGGER(hidoc->logger, "offset:%lld fheader{status:%d globalid:%lld category:%lld rank:%f slevel:%d size:%d", LL64(hidoc->state->dumps[no].offset), fheader.status, LL64(fheader.globalid), LL64(fheader.category), fheader.rank, fheader.slevel, fheader.size);
+            hidoc->state->dumps[no].offset += (off_t)sizeof(FHEADER);
             if(fheader.size <= 0)
             {
                 if(fheader.flag & IB_STATUS_SET)
@@ -2221,23 +2343,22 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
             {
                 if((fheader.flag & IB_DUMP_SET))
                 {
-                    if(read(hidoc->dumpfd, path, fheader.size) == fheader.size)
+                    if(read(hidoc->state->dumps[no].fd, path, fheader.size) == fheader.size)
                     {
                         path[fheader.size] = 0;
-                        WARN_LOGGER(hidoc->logger, "reset_dump(%s)", path);
-                        if(hidoc__set__dump(hidoc, path) > 0)
-						{
-                           ret = 0;
-						}
-						else
-						{
-                           hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
-                           FATAL_LOGGER(hidoc->logger, "reset_dump(%s) failed", path);
-						}
+                        if((ret = hidoc_set_dump(hidoc, no, path)) < 0)
+                        {
+                            WARN_LOGGER(hidoc->logger, "reset_dump(%s)", path);
+                            hidoc->state->dumps[no].offset -= (off_t)sizeof(FHEADER);
+                        }
+                        else
+                        {
+                            WARN_LOGGER(hidoc->logger, "reset_dump(%s) failed", path);
+                        }
                     }
                     else
                     {
-                        hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
+                        hidoc->state->dumps[no].offset -= (off_t)sizeof(FHEADER);
                     }
                 }
                 else
@@ -2245,33 +2366,33 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
 					if(fheader.size > HI_DOCBLOCK_MAX)
 					{
                         ret = -1;
-                        hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
-                        WARN_LOGGER(hidoc->logger, "read fd:%d data:%p offset:%lld id:%lld size:%d/%d failed, %s", hidoc->dumpfd, data, LL64(hidoc->state->dump_offset), LL64(fheader.globalid), fheader.size, ret, strerror(errno));
+                        hidoc->state->dumps[no].offset -= (off_t)sizeof(FHEADER);
+                        WARN_LOGGER(hidoc->logger, "read dump[%d:%s] fd:%d data:%p offset:%lld id:%lld size:%d/%d failed, %s", no, hidoc->state->dumps[no].file, hidoc->state->dumps[no].fd, data, LL64(hidoc->state->dumps[no].offset), LL64(fheader.globalid), fheader.size, ret, strerror(errno));
                         goto end;
 					}
                     REALLOC(hindex->data, hindex->ndata, (fheader.size+1));
                     //REMALLOC(hidoc->data, hidoc->ndata, fheader.size, hidoc->logger);
                     ret = 0;
-                    if((data = hindex->data) && lseek(hidoc->dumpfd, (off_t)hidoc->state->dump_offset,
-                                SEEK_SET) == hidoc->state->dump_offset
-                            && (ret = read(hidoc->dumpfd, data, fheader.size)) == fheader.size)
+                    if((data = hindex->data) && lseek(hidoc->state->dumps[no].fd, 
+                     (off_t)hidoc->state->dumps[no].offset, SEEK_SET) 
+                            == hidoc->state->dumps[no].offset
+                            && (ret = read(hidoc->state->dumps[no].fd, data, fheader.size)) == fheader.size)
                     {
                         data[fheader.size] = '\0';
-                        hidoc->state->dump_offset += (off_t)fheader.size;
+                        hidoc->state->dumps[no].offset += (off_t)fheader.size;
                         is_ok = 1;
                         ret = 0;
                     }
                     else
                     {
-                        hidoc->state->dump_offset -= (off_t)sizeof(FHEADER);
-                        WARN_LOGGER(hidoc->logger, "read fd:%d data:%p offset:%lld id:%lld size:%d/%d failed, %s", hidoc->dumpfd, data, LL64(hidoc->state->dump_offset), LL64(fheader.globalid), fheader.size, ret, strerror(errno));
+                        hidoc->state->dumps[no].offset -= (off_t)sizeof(FHEADER);
+                        WARN_LOGGER(hidoc->logger, "read dump[%d:%s] fd:%d data:%p offset:%lld id:%lld size:%d/%d failed, %s", no, hidoc->state->dumps[no].file, hidoc->state->dumps[no].fd, data, LL64(hidoc->state->dumps[no].offset), LL64(fheader.globalid), fheader.size, ret, strerror(errno));
                         ret = -1;
                     }
                 }
             }
         }
 end:
-	    MUTEX_UNLOCK(hidoc->mutex);
         if(is_ok && data)
         {
             if((fheader.flag & IB_INT_SET) && fheader.size == sizeof(int) * hidoc->state->int_index_count)
@@ -3298,8 +3419,15 @@ void hidoc_clean(HIDOC *hidoc)
     int i = 0;
     if(hidoc)
     {
-        if(hidoc->dumpfd > 0)close(hidoc->dumpfd);
-        if(hidoc->outdocfd > 0)close(hidoc->outdocfd);
+        for(i = 0; i < hidoc->state->ntasks; i++)
+        {
+            if(hidoc->state->dumps[i].fd > 0 
+                    && hidoc->state->dumps[i].modtime > hidoc->state->stime)
+            {
+                close(hidoc->state->dumps[i].fd);
+            }
+            hidoc->state->dumps[i].fd = 0;
+        }
         if(hidoc->state) munmap(hidoc->state, sizeof(HISTATE));
         if(hidoc->histatefd > 0)close(hidoc->histatefd);
         if(hidoc->xindexio.map) munmap(hidoc->xindexio.map, hidoc->xindexio.size);
@@ -3312,6 +3440,8 @@ void hidoc_clean(HIDOC *hidoc)
         if(hidoc->xdoubleio.fd > 0) close(hidoc->xdoubleio.fd);
         if(hidoc->bstermio.map) munmap(hidoc->bstermio.map, hidoc->bstermio.size);
         if(hidoc->bstermio.fd > 0) close(hidoc->bstermio.fd);
+        if(hidoc->syntermio.map) munmap(hidoc->syntermio.map, hidoc->syntermio.size);
+        if(hidoc->syntermio.fd > 0) close(hidoc->syntermio.fd);
         if(hidoc->db) db_clean(PDB(hidoc->db));
         if(hidoc->update) db_clean(PDB(hidoc->update));
         if(hidoc->map) mmtrie_clean(hidoc->map);
@@ -3359,7 +3489,6 @@ HIDOC *hidoc_init()
         hidoc->genindex                 = hidoc_genindex;
         hidoc->set_dump                 = hidoc_set_dump;
         hidoc->get_dumpinfo             = hidoc_get_dumpinfo;
-        hidoc->pop_document             = hidoc_pop_document;
         hidoc->parse_document           = hidoc_parse_document;
         hidoc->parseHTML                = hidoc_parseHTML;
         hidoc->add_node                 = hidoc_add_node;
@@ -3375,6 +3504,10 @@ HIDOC *hidoc_init()
         hidoc->over_index               = hidoc_over_index;
         hidoc->read_upindex             = hidoc_read_upindex;
         hidoc->over_upindex             = hidoc_over_upindex;
+        hidoc->set_synterm              = hidoc_set_synterm;
+        hidoc->sync_synterms            = hidoc_sync_synterms;
+        hidoc->read_synterms            = hidoc_read_synterms;
+        hidoc->over_synterms            = hidoc_over_synterms;
         hidoc->set_bterm                = hidoc_set_bterm;
         hidoc->update_bterm             = hidoc_update_bterm;
         hidoc->list_bterms              = hidoc_list_bterms;

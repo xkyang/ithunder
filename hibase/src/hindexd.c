@@ -80,6 +80,7 @@ static void *logger = NULL;
 static char *ibase_basedir = NULL;
 static int  ibase_used_for = 0;
 static int  ibase_mmsource_status = 0;
+static int  ibase_ignore_secid = 0;
 //static int httpd_page_num  = 20;
 //static int httpd_page_max  = 50;
 static char *highlight_start = "<font color=red>";
@@ -278,6 +279,7 @@ int indexd_index_handler(CONN *conn)
                         }
                         db = pools[dbid];
                     }
+                    if(ibase_ignore_secid) docheader->secid = 0;
                     if((ibase_add_document(db, &block)) != 0)
                     {
                         FATAL_LOGGER(logger, "Add documents[%d][%d] failed, %s", i, docheader->globalid, strerror(errno));
@@ -334,11 +336,11 @@ void indexd_query_handler(void *args)
         xchunk = qtask->chunk;
         if(pquery->nquerys > 0) 
         {
-           ichunk = ibase_bquery(db, pquery, secid);
+            ichunk = ibase_bquery(db, pquery, secid);
         }
         else 
 		{
-           ichunk = ibase_query(db, pquery, secid);
+            ichunk = ibase_query(db, pquery, secid);
 		}
         pthread_mutex_lock(&qtask->mutex);
         if(ichunk)
@@ -581,6 +583,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
     CB_DATA *block = NULL;
     ICHUNK *ichunk = NULL;
     BTERM *bterm = NULL;
+    SYNTERM *synterm = NULL;
     QTASK *qtask = NULL;
     IQSET *qset = NULL;
     IHEAD *req = NULL;
@@ -653,7 +656,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                 }
                                 pthread_mutex_unlock(&gmutex);
                                 if(qtask && (qtask->db = db) 
-                                        && (qtask->nsecs = ibase_get_secs(db, pquery->secblock_filter, qtask->secs)) > 0)
+                                 && (qtask->nsecs=ibase_get_secs(db, pquery->secblock_filter, qtask->secs)) > 0)
                                 {
                                     memcpy(&(qtask->query), pquery, sizeof(IQUERY));
                                     memcpy(&(qtask->req), req, sizeof(IHEAD));
@@ -772,6 +775,19 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             term = p;
                             p += bterm->len;
                             ibase_update_bterm(ibase, bterm, term);
+                        }
+                        goto end;
+                    }
+                    break;
+                case IB_REQ_UPDATE_SYNTERM:
+                    {
+                        p = chunk->data;
+                        end = (chunk->data + chunk->ndata);
+                        while(p < end)
+                        {
+                            synterm = (SYNTERM *)p;
+                            p += sizeof(SYNTERM);
+                            ibase_update_synterm(ibase, synterm);
                         }
                         goto end;
                     }
@@ -1581,6 +1597,14 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             //fprintf(stdout, "%s::%d nquerys:%d nqterms:%d\n", __FILE__, __LINE__, query->nquerys, query->nqterms);
         }
         else ret = 0;
+        /* synonym term */
+        if(ret > 0) ret = ibase_synparser(db, query);
+        /*
+        for(i = 0; i < query->nqterms; i++)
+        {
+            fprintf(stdout, "%s::%d nqterms:%d/%d/%d synid:%d syno:%d termid:%d\n", __FILE__, __LINE__, query->nqterms, query->nvqterms, query->nquerys, query->qterms[i].synid, query->qterms[i].synno, query->qterms[i].id);
+        }
+        */
         //fprintf(stdout, "db:%p dbid:%d query_str:%s state:%p ret:%d query:%p\n", db, query->dbid, query_str, db->termstateio.map, ret, query);
     }
     return ret;
@@ -1707,7 +1731,6 @@ int httpd_packet_handler(CONN *conn, CB_DATA *packet)
             memset(&query, 0, sizeof(IQUERY));
             if(http_req.nargvs > 0 && httpd_request_handler(conn, &http_req, &query) >= 0) 
             {
-                
                 return httpd_query_handler(conn, &query);
             }
             else
@@ -1963,6 +1986,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     sbase->set_evlog(sbase, iniparser_getstr(dict, "SBASE:evlogfile"));
     sbase->set_evlog_level(sbase, iniparser_getint(dict, "SBASE:evlog_level", 0));
     /* IBASE */
+    ibase_ignore_secid = iniparser_getint(dict, "IBASE:ignore_secid", 0);
     ibase_used_for = iniparser_getint(dict, "IBASE:used_for", 0);
     ibase_mmsource_status = iniparser_getint(dict, "IBASE:mmsource_status", 1);
     if((ibase_basedir = iniparser_getstr(dict, "IBASE:basedir")) == NULL) 

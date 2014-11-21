@@ -94,6 +94,7 @@ static void *argvmap = NULL;
 #define E_OP_LIST_BTERMS        18
 #define E_OP_DEL_BTERM          19
 #define E_OP_LIST_DUMP          20
+#define E_OP_SET_SYNTERM        21
 static char *e_argvs[] =
 {
     "op",
@@ -134,10 +135,14 @@ static char *e_argvs[] =
 #define E_ARGV_DUMPFILE     17
     "status",
 #define E_ARGV_STATUS       18
-    "termid"
+    "termid",
 #define E_ARGV_TERMID       19
+    "synterms",
+#define E_ARGV_SYNTERMS     20
+    "no"
+#define E_ARGV_NO           21
 };
-#define  E_ARGV_NUM         20
+#define  E_ARGV_NUM         22
 /* data handler */
 int hidocd_packet_reader(CONN *conn, CB_DATA *buffer);
 int hidocd_packet_handler(CONN *conn, CB_DATA *packet);
@@ -292,9 +297,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
     char buf[HTTP_LINE_MAX], line[2048], *p = NULL, *end = NULL, *name = NULL,
          *bterms = NULL, *termlist = NULL, *doclist = NULL, *rank = NULL, *ip = NULL, 
          *category = NULL, *slevel = NULL, *bitxcat = NULL, *dumpfile = NULL, 
-         *fields = NULL, *idx_status = NULL, *term = NULL;
-    int ret = -1, i = 0, id = 0, x = 0, n = 0, type = -1, taskid = -1, nodeid = -1, 
-        port = -1, limit = -1, op = -1, len = 0, status = -1, termid = 0;
+         *fields = NULL, *idx_status = NULL, *term = NULL, *syns[64], *synterms = NULL;
+    int ret = -1, i = 0, j = 0, id = 0, x = 0, n = 0, type = -1, taskid = -1, nodeid = -1, 
+        port = -1, limit = -1, op = -1, len = 0, status = -1, termid = 0, no = -1;
     int64_t globalid = 0;
     FXDOUBLE fxdoublelist[HI_FXDOUBLE_MAX];
     FXINT fxintlist[HI_FXINT_MAX];
@@ -366,6 +371,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                             break;
                         case E_ARGV_BTERMS:
                             bterms = p;
+                            break;
+                        case E_ARGV_SYNTERMS:
+                            synterms = p;
+                            break;
+                        case E_ARGV_NO:
+                            no = atoi(p);
                             break;
                         case E_ARGV_DUMPFILE:
                             dumpfile = p;
@@ -581,6 +592,38 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                     else goto err_end;
                 }
                 break;
+            case E_OP_SET_SYNTERM:
+                {
+                    if((p = synterms))
+                    {
+                        while(*p != '\0')
+                        {
+                            while(*p == 0x20)++p;
+                            j = 0;
+                            while(*p != '\0' && *p != ',' && *p != ';')
+                            {
+                                while(*p == 0x20)++p;
+                                term = p;
+                                while(*p != '\0' && *p != 0x20 && *p != '|' 
+                                        && *p != ',' && *p != ';')
+                                {
+                                    if(*p >= 'A' && *p <= 'Z') *p += 'a' - 'A';
+                                    ++p;
+                                }
+                                syns[j] = term;
+                                if(*p == '|'){*p++ = 0;}
+                                while(*p == 0x20)++p;
+                                ++j;
+                            }
+                            if(*p == ',' || *p == ';')*p++ = 0;
+                            if(j > 0) hidoc->set_synterm(hidoc, syns, j);
+                        }
+                        hidoc->sync_synterms(hidoc);
+                        goto end;
+                    }
+                    else goto err_end;
+                }
+                break;
             case E_OP_SET_BTERM:
                 {
                     if((p = bterms) && status > 0)
@@ -630,7 +673,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                 break;
             case E_OP_SET_DUMP:
                 {
-                    if(dumpfile && hidoc->set_dump(hidoc, dumpfile) > 0)
+                    if(dumpfile && no >= 0 && hidoc->set_dump(hidoc, no, dumpfile) > 0)
                     {
                         p = buf;
                         p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
@@ -645,7 +688,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                 break;
             case E_OP_LIST_DUMP:
                 {
-                    if((n = hidoc->get_dumpinfo(hidoc, line, line + HTTP_LINE_MAX))> 0)
+                    if((n = hidoc->get_dumpinfo(hidoc, line))> 0)
                     {
                         p = buf;
                         p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
@@ -666,12 +709,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
         return 0;
 end:
         p = buf;
-                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
-                                "Content-Length: 0\r\n", http_default_charset);
-                        if((n = http_req->headers[HEAD_GEN_CONNECTION]) > 0)
-                            p += sprintf(p, "Connection: %s\r\n", (http_req->hlines + n));
-                        p += sprintf(p, "\r\n");
-                        return conn->push_chunk(conn, buf, p - buf);
+        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
+                "Content-Length: 0\r\n", http_default_charset);
+        if((n = http_req->headers[HEAD_GEN_CONNECTION]) > 0)
+            p += sprintf(p, "Connection: %s\r\n", (http_req->hlines + n));
+        p += sprintf(p, "\r\n");
+        return conn->push_chunk(conn, buf, p - buf);
 btermslist:
         len = sizeof(BSTERM) * hidoc->state->bterm_id_max;
         if((chunk = conn->newchunk(conn, len)))
@@ -837,6 +880,10 @@ int hidocd_packet_handler(CONN *conn, CB_DATA *packet)
             {
                 hidoc->over_bterms(hidoc, conn->c_id);
             }
+            else if(resp->cmd == IB_RESP_UPDATE_SYNTERM) 
+            {
+                hidoc->over_synterms(hidoc, conn->c_id);
+            }
             return hidocd_ok_handler(conn);
         }
         else
@@ -905,13 +952,15 @@ void hidocd_task_handler(void *arg)
 
     if((id = (((long)arg) - 1)) >= 0 && id < ntask && tasks)
     {
-        if(hidoc->parse_document(hidoc, tasks[id].hindex) >= 0)
+        if(hidoc->parse_document(hidoc, id, tasks[id].hindex) >= 0)
         {
-            //DEBUG_LOGGER(logger, "over for tasks[%d]", id);
+            DEBUG_LOGGER(logger, "over for tasks[%d]", id);
             hidocd->newtask(hidocd, &hidocd_task_handler, (void *)(((long )id+1)));
+            DEBUG_LOGGER(logger, "new task[%d] qdaemons:%d", id, hidocd->nqdaemons);
         }
         else 
         {
+            DEBUG_LOGGER(logger, "retask[%d] qdaemons:%d", id, hidocd->nqdaemons);
             tasks[id].status = 0;
             iqueue_push(taskqueue, id);
         }
@@ -956,6 +1005,23 @@ int hidocd_ok_handler(CONN *conn)
                 {
                     req->id = conn->c_id;
                     req->cmd = IB_REQ_UPDATE_BTERM;
+                    req->nodeid = -1;
+                    req->length = len;
+                    len += sizeof(IHEAD);
+                    if(conn->send_chunk(conn, chunk, len) != 0)
+                        conn->freechunk(conn, chunk);
+                    else
+                    {
+                        conn->set_timeout(conn, task_wait_timeout);
+                    }
+                    return 0;
+                }
+                else if((len = hidoc->read_synterms(hidoc, conn->c_id, 
+                                (chunk->data + sizeof(IHEAD)), 
+                            task_chunk_size - sizeof(IHEAD))) > 0)
+                {
+                    req->id = conn->c_id;
+                    req->cmd = IB_REQ_UPDATE_SYNTERM;
                     req->nodeid = -1;
                     req->length = len;
                     len += sizeof(IHEAD);
@@ -1180,10 +1246,11 @@ int sbase_initialize(SBASE *sbase, char *conf)
     httpd->session.data_handler = &httpd_data_handler;
     httpd->session.timeout_handler = &httpd_timeout_handler;
     httpd->session.oob_handler = &httpd_oob_handler;
+    ntask = iniparser_getint(dict, "HIDOCD:ntask", 4);
     if((hidoc = hidoc_init()))
     {
         hidoc->log_access = iniparser_getint(dict, "HIDOCD:log_access", 0);
-        hidoc->set_basedir(hidoc, iniparser_getstr(dict, "HIDOCD:basedir"));
+        hidoc->set_basedir(hidoc, iniparser_getstr(dict, "HIDOCD:basedir"), ntask);
         dictrules = iniparser_getstr(dict, "HIDOCD:dictrules");
         dictfile = iniparser_getstr(dict, "HIDOCD:dictfile");
         hidoc->set_dict(hidoc, dictfile, http_default_charset, dictrules);
@@ -1197,7 +1264,6 @@ int sbase_initialize(SBASE *sbase, char *conf)
         _exit(-1);
     }
     LOGGER_INIT(logger, iniparser_getstr(dict, "HIDOCD:access_log"));
-    ntask = iniparser_getint(dict, "HIDOCD:ntask", 4);
     tasks = (ITASK *)xmm_mnew(ntask * sizeof(ITASK));
     if((taskqueue = iqueue_init()))
     {
@@ -1224,7 +1290,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     hidocd->service_type = iniparser_getint(dict, "HIDOCD:service_type", C_SERVICE);
     hidocd->service_name = iniparser_getstr(dict, "HIDOCD:service_name");
     hidocd->nprocthreads = iniparser_getint(dict, "HIDOCD:nprocthreads", 1);
-    hidocd->ndaemons = ntask;
+    hidocd->ndaemons = ntask * 2;
     hidocd->niodaemons = iniparser_getint(dict, "HIDOCD:niodaemons", 1);
     hidocd->use_cond_wait = iniparser_getint(dict, "HIDOCD:use_cond_wait", 0);
     if(iniparser_getint(dict, "HIDOCD:use_cpu_set", 0) > 0) hidocd->flag |= SB_CPU_SET;

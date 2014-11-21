@@ -333,7 +333,8 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
             ibase->index = mdb_init(path, 0);
         }
-
+        sprintf(path, "%s/%s", dir, IB_SYNDB_DIR);
+        ibase->syndb = db_init(path, 1);
         /* check int/long/double index*/
         /*
         ibase_check_int_index(ibase);
@@ -685,7 +686,7 @@ void ibase_push_itermlist(IBASE *ibase, ITERM *itermlist)
         }
         else
         {
-            xmm_free(itermlist, sizeof(ITERM) * IB_QUERY_MAX);
+            xmm_free(itermlist, sizeof(ITERM) * IB_QUERY2_MAX);
         }
         MUTEX_UNLOCK(ibase->mutex_itermlist);
     }
@@ -705,12 +706,12 @@ ITERM *ibase_pop_itermlist(IBASE *ibase)
         {
             x = --(ibase->nqiterms);
             itermlist = ibase->qiterms[x];
-            memset(itermlist, 0, sizeof(ITERM) * IB_QUERY_MAX);
+            memset(itermlist, 0, sizeof(ITERM) * IB_QUERY2_MAX);
             ibase->qiterms[x] = NULL;
         }
         else
         {
-            itermlist = (ITERM *)xmm_mnew(IB_QUERY_MAX * sizeof(ITERM));
+            itermlist = (ITERM *)xmm_mnew(IB_QUERY2_MAX * sizeof(ITERM));
         }
         MUTEX_UNLOCK(ibase->mutex_itermlist);
     }
@@ -907,6 +908,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
+                                if(termstates[termid].synid > 0) 
+                                {
+                                    termid = termstates[termid].synid;
+                                }
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
                                     found = -1;x = -1;
@@ -976,7 +981,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         last_no = x;
                                     }
                                 }
-                                ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
+                                ACCESS_LOGGER(ibase->logger, "found term-sync-id:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {
@@ -1026,6 +1031,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
+                                if(termstates[termid].synid > 0) 
+                                {
+                                    termid = termstates[termid].synid;
+                                }
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
                                     found = -1;x = -1;
@@ -1091,6 +1100,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         }
                                     }
                                 }
+                                ACCESS_LOGGER(ibase->logger, "found term-sync-id:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {
@@ -1134,6 +1144,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 z = list[i];
                 termid = query->qterms[i].id  = qterms[z].id;
                 query->qterms[i].size = qterms[z].size;
+                query->qterms[i].synno = i;
                 query->qterms[i].bitnot = qterms[z].bitnot;
                 query->qterms[i].bithit = qterms[z].bithit;
                 //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
@@ -1142,6 +1153,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                     query->qterms[i].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
                     ACCESS_LOGGER(ibase->logger, "terms[%d] n:%lld N:%lld idf:%f", termid, (long long)n, (long long)N, query->qterms[i].idf);
                     if(query->qterms[i].idf < 0) query->qterms[i].idf = 1.0f;
+                    if(termstates[termid].synid > 0) 
+                    {
+                        query->qterms[i].flag |= QTERM_BIT_SYN;
+                        query->qterms[i].synid = termstates[termid].synid;
+					}
                     if(termstates[termid].status == IB_BTERM_BLOCK)
                     {
                         query->flag |= IB_QUERY_FORBIDDEN;
@@ -1188,6 +1204,47 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
     }
 #endif
     return -2;
+}
+
+/* synonym parser */
+int ibase_synparser(IBASE *ibase, IQUERY *query)
+{
+    int ret = -1, i = 0, j = 0, k = 0, old = 0, termid = 0, n = 0, N = 0, 
+        m = 0, syns[IB_SYNTERM_MAX];
+    TERMSTATE *termstates = NULL;
+
+    if(ibase && query && query->nqterms && (termstates = (TERMSTATE *)(ibase->termstateio.map)))
+    {
+        old = k = query->nqterms;
+        for(i = 0; i < query->nqterms; i++)
+        {
+            if((m = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, (char *)syns)) > 0)
+            {
+                m /= sizeof(int32_t);
+                for(j = 0; j < m; j++)
+                {
+                    termid = syns[j];
+                    if(termid != query->qterms[i].synid && k < IB_QUERY2_MAX)
+                    {
+                        memcpy(&(query->qterms[k]), &(query->qterms[i]), sizeof(QTERM));
+                        query->qterms[k].size = termstates[termid].len;
+                        query->qterms[k].id = termid;
+                        //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
+                        if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
+                        {
+                            query->qterms[k].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
+                            if(query->qterms[k].idf < 0) query->qterms[k].idf = 1.0f;
+                            ++k;
+                        }
+                    }
+                }
+            }
+        }
+        query->nqterms = k;
+        //query->nquerys += k - old; 
+        ret = query->nqterms;
+    }
+    return ret;
 }
 
 /* set index status */
@@ -1643,6 +1700,29 @@ int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term)
     return 0;
 }
 
+/* update synonym term */
+int ibase_update_synterm(IBASE *ibase, SYNTERM *term)
+{
+    TERMSTATE *termstatelist = NULL;
+    int id = 0, i = 0;
+
+    if(ibase && term && term->synid > 0 && term->count > 0)
+    {
+        db_set_data(PDB(ibase->syndb),term->synid,(char *)term->syns,term->count*sizeof(int32_t));
+        for(i = 0; i < term->count; i++)
+        {
+            id = term->syns[i];
+            MUTEX_LOCK(ibase->mutex_termstate);
+            if(id > ibase->state->termid){ADD_TERMSTATE(ibase, id);}
+            MUTEX_UNLOCK(ibase->mutex_termstate);
+            if((termstatelist = (TERMSTATE *)ibase->termstateio.map))
+            {
+                termstatelist[id].synid = term->synid;
+            }
+        }
+    }
+    return 0;
+}
 
 /* set log level */
 int ibase_set_log_level(IBASE *ibase, int level)
@@ -1664,6 +1744,7 @@ void ibase_clean(IBASE *ibase)
     if(ibase)
     {
         if(ibase->index) mdb_clean(PMDB(ibase->index));
+        if(ibase->syndb) db_clean(PDB(ibase->syndb));
         for(k = 0; k < ibase->state->nsecs; k++)
         {
             x = ibase->state->secs[k];
@@ -1786,6 +1867,7 @@ IBASE *ibase_init()
         ibase->set_long_field           = ibase_set_long_field;
         ibase->set_double_field         = ibase_set_double_field;
         ibase->qparser                  = ibase_qparser;
+        ibase->synparser                = ibase_synparser;
         ibase->set_index_status         = ibase_set_index_status;
         ibase->set_phrase_status        = ibase_set_phrase_status;
         ibase->set_compression_status   = ibase_set_compression_status;

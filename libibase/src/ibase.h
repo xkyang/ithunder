@@ -9,6 +9,7 @@ extern "C" {
 #define  IB_KEYTERM_MAX         256
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
+#define  IB_QUERY2_MAX          64
 #endif
 #define  IB_IDX_MAX             32
 #define  IB_INT_OFF             32
@@ -79,6 +80,7 @@ extern "C" {
 #define  IB_USED_FOR_QPARSERD   0x02
 #define  IB_SEC_MAX             64
 #define  IB_DB_MAX              64
+#define  IB_SYNTERM_MAX         16
 #define  IB_ORDERBY_MAX         64
 #define  IB_EXPR_MAX            2048
 #define  IBLL(xxx) ((long long int)(xxx))
@@ -92,6 +94,8 @@ extern "C" {
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_MHEADER_NAME         "ibase.mheader"
+#define  IB_ITREE_NAME           "ibase.itree"
+#define  IB_SYNDB_DIR            "syndb"
 #define  IB_IDX_DIR              "idx"
 #define  IB_INDEX_DIR            "index"
 #define  IB_SOURCE_DIR           "source"
@@ -160,15 +164,17 @@ typedef struct _ITERM
     int termid;
     int docid;
     int ndocid;
-    int term_count;
     int fields;
+    int term_count;
     int prevnext_size;
-    int no;
     int last;
-    int term_len;
     int weight;
     int bithit;
     int bitnot;
+    int16_t bits;
+    int16_t no;
+    int16_t synno;
+    int16_t term_len;
     char *p;
     char *end;
     char *sprevnext;
@@ -189,12 +195,19 @@ typedef struct _STERM
     int prevnext_count;
     int prevnext_size;
 }STERM;
+typedef struct _SYNTERM
+{
+    int synid;
+    int count;
+    int syns[IB_SYNTERM_MAX];
+}SYNTERM;
 /* term state */
 typedef struct _TERMSTATE
 {
     short   status;
     short   len;
     int     total;
+    int     synid;
     //int     last_docid;
     //int     mod_time;
 }TERMSTATE;
@@ -467,12 +480,15 @@ typedef struct _LBITS
 #define QTERM_BIT_NEXT      0x10
 #define QTERM_BIT_FORBIDDEN 0x20
 #define QTERM_BIT_DOWN      0x40
+#define QTERM_BIT_SYN       0x80
 /* query term */
 typedef struct _QTERM
 {
     short flag;
     short size;
     int   id;
+    int   synid;
+    int   synno;
     int   prev;
     int   next;
     int   bithit;
@@ -499,23 +515,23 @@ typedef struct _IQUERY
     short       from;
     short       count;
     short       secid;
+    short       dbid;
     short       ntop;
     short       nqterms;
     short       nquerys;
     short       norderby;
     short       groupby;
-    short       dbid;
     short       int_range_count;
     short       long_range_count;
     short       double_range_count;
-    short       int_inset_count;
-    short       long_inset_count;
-    short       double_inset_count;
     short       int_bits_count;
     short       long_bits_count;
     short       status;
     short       nvqterms;
-	short		bits;
+    short       int_inset_count;
+    short       long_inset_count;
+    short       double_inset_count;
+    short       bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -653,6 +669,8 @@ typedef struct _IBSTATE
 #define IB_RESP_UPDATE_BTERM     14
 #define IB_REQ_CLEAR_CACHE       15
 #define IB_RESP_CLEAR_CACHE      16
+#define IB_REQ_UPDATE_SYNTERM    17
+#define IB_RESP_UPDATE_SYNTERM   18
 #define IB_STATUS_OK             0x00
 #define IB_STATUS_ERR            0x01
 #define IB_STATUS_FORBIDDEN      0x02
@@ -750,9 +768,10 @@ typedef struct _IBASE
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
     void *index; /* index db */
-    void *mmtree; /* int tree */
-    void *mmtree64;/* long tree */
-    void *dtree64;/* double tree */
+    void *syndb; /* synonym db */
+    void *itree; /* int tree */
+    void *ltree;/* long tree */
+    void *dtree;/* double tree */
     void *mmtrie; /* dict */
     void *xmmtrie; /* dict */
     void *docmap; /* globalid to docid map*/
@@ -780,6 +799,7 @@ typedef struct _IBASE
     int     (*set_long_field)(struct _IBASE *ibase, int64_t globalid, int field_no, int64_t val);
     int     (*set_double_field)(struct _IBASE *ibase, int64_t globalid, int field_no, double val);
     int     (*qparser)(struct _IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
+    int     (*synparser)(struct _IBASE *ibase,  IQUERY *query);
     int     (*set_index_status)(struct _IBASE *ibase, int status);
     int     (*set_phrase_status)(struct _IBASE *ibase, int status);
     int     (*set_compression_status)(struct _IBASE *ibase, int status);
@@ -827,8 +847,12 @@ int ibase_enable_term(IBASE *ibase, int termid);
 int ibase_disable_term(IBASE *ibase, int termid);
 /* block */
 int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term);
+/* update synonym term */
+int ibase_update_synterm(IBASE *ibase, SYNTERM *term);
 /* query parser ,return term count */
 int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
+/* synonym parser */
+int ibase_synparser(IBASE *ibase, IQUERY *query);
 /* set index status */
 int ibase_set_index_status(IBASE *ibase, int status);
 /* set phrase status */
