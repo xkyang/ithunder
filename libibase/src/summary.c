@@ -475,7 +475,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     p_time += PT_LU_USEC(timer);
                     for(j = 0; j < docheader->nterms; j++)
                     {
-                        ACCESS_LOGGER(ibase->logger, "j:%d termid:%d", j, termlist[j].termid);
+                        //ACCESS_LOGGER(ibase->logger, "j:%d termid:%d", j, termlist[j].termid);
                         if(MTREE64_GET(hitsmap, termlist[j].termid, pdata) == 0)
                         {
                             x = (int)data;

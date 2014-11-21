@@ -865,7 +865,7 @@ int hidoc_read_bterms(HIDOC *hidoc, int taskid, char *data, int ndata)
                 && tasks[k].status > 0 && tasks[k].bterm_mod_time < hidoc->state->bterm_mod_time
                 && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
         {
-            for(i = 0; i <= hidoc->state->bterm_id_max; i++)
+            for(i = 1; i <= hidoc->state->bterm_id_max; i++)
             {
                 if(bsterms[i].bterm.len > 0)
                 {
