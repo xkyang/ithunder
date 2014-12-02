@@ -1224,7 +1224,7 @@ int httpd_packet_handler(CONN *conn, CB_DATA *packet)
                 }
                 else 
                 {
-                    ERROR_LOGGER(logger, "ERROR{%.*s arg_len:%d from:%d count:%d qid:%d pid:%d status:%d new_query:%d", http_req.argv_len, packet->data + http_req.argv_off, (int)(s - p), from, count, qid, pid, status, new_query);
+                    ERROR_LOGGER(logger, "ERROR{%.*s arg_len:%d from:%d count:%d qid:%d pid:%d status:%d new_query:%d remote[%s:%d] via %d}", http_req.argv_len, packet->data + http_req.argv_off, (int)(s - p), from, count, qid, pid, status, new_query, conn->remote_ip, conn->remote_port, conn->fd);
                     goto err_end;
                 }
                 return 0;
