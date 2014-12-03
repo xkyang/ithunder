@@ -577,7 +577,7 @@ typedef struct _IWEIGHT
 }IWEIGHT;
 #define  IBLONG(xmx) ((int64_t)(xmx))
 #define  IB_SCORE_BASE  ((int64_t)100000000)
-#define  IB_EXPR_BASE   100
+#define  IB_EXPR_BASE   10000
 #define  IB_INT_BASE    1000000
 #define  IB_FLOAT_LIMIT 1000000
 #define  IB_INT_SCORE(X) ((((int64_t)(X)) * IB_INT_BASE))
