@@ -45,6 +45,8 @@
         .ntask{display:inline;color:red;font-size:12pt;}
         </style>
         <script language='javascript'>
+            var rangefilter = "";
+            var infilter = "";
             var chradd = '✚', chrfold = '►', chrtree = '▼', chredit='✎', chrdel='✘', chrview = '☜ ';
             var oTimer = null, QTimer = null;
             var idisplay = "display=0$,1$,2$,3,4,5,6,7,8,9";
@@ -420,6 +422,35 @@
                     xmlHttp.send();
                 }else alert("请输入关键词");
             }
+            function makeInRange()
+            {
+                var form = document.forms['search'];
+                var field = -1;
+                if(form['field'] && ((field = form['field'].value) > -1))
+                {
+                    var filter = form['filter'].value;
+                    if(filter == "in")
+                    {
+                       if(form['fieldfrom'].value)
+                       {
+                          infilter += field + ":[" + form['fieldfrom'].value + "];";
+                       }
+                    }
+                    else
+                    {
+                       rangefilter += field + ":[";
+                       if(form['fieldfrom'].value)
+                       {
+                          rangefilter += form['fieldfrom'].value + ",";
+                       }
+                       if(form['fieldto'].value)
+                       {
+                          rangefilter += form['fieldto'].value;
+                       }
+                       rangefilter += "];";
+                    }
+                }
+            }
             //so
             function so(page)
             {
@@ -430,7 +461,6 @@
                 var n = 0;
                 var from = 0;
                 var count = 15;
-                var rangefilter = "";
                 var catfilter = "";
                 var multicat = "";
                 var catgroup = "";
@@ -561,8 +591,8 @@
                         rangefilter += "9:["+itemid+","+itemid+"],";
                     }
                     */
-                    if(rangefilter) 
-                        uri += "&rangefilter="+rangefilter.substring(0, rangefilter.length-1);
+                    if(rangefilter) uri += "&rangefilter="+rangefilter.substring(0, rangefilter.length-1);
+                    if(infilter) uri += "&in="+infilter;
                     if(catfilter) uri += "&catfilter="+catfilter.substring(0, catfilter.length-1);
                     if(multicat) uri += "&multicat="+multicat.substring(0, multicat.length-1);
                     if(catgroup) uri += "&catgroup="+catgroup.substring(0, catgroup.length-1);
@@ -1084,6 +1114,19 @@
                 <input type=checkbox name='t1'>内容
                 <input type=checkbox name='t2'>作者
                 &nbsp;&nbsp;
+                <hr>
+                过滤字段:<select name='field'>
+                <option selected="selected" value="-1">无</option>
+                </select>
+                &nbsp;&nbsp;
+				<select name='filter'>
+                  <option selected="selected" value="in">In</option>
+	   	          <option value="rangefilter">Range</option>
+                </select>
+                &nbsp;&nbsp;
+			    <input type=text name='fieldfrom' size=8>&nbsp;
+                <input type=text name='fieldto' size=8> &nbsp;
+                <input type=button value='Add' onclick="javascript:makeInRange();">
                 <hr>
                 缓存时长:<input type=text value=1 size=4 name="lifetime" >(秒)&nbsp;&nbsp;
                 发帖时间:从<input type=text name='datefrom' size=8 >&nbsp;

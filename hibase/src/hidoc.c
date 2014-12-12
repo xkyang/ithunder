@@ -502,7 +502,7 @@ int hidoc_get_dumpinfo(HIDOC *hidoc, char *out)
 }
 
 /* import new dict */
-int hidoc_set_dict(HIDOC *hidoc, char *dict_file, char *dict_charset, char *dict_rules)
+int hidoc_set_dict(HIDOC *hidoc, char *dict_file, char *dict_charset, char *dict_rules, int mode)
 {
     int i = 0;
     if(hidoc)
@@ -517,6 +517,7 @@ int hidoc_set_dict(HIDOC *hidoc, char *dict_file, char *dict_charset, char *dict
             scws_set_charset((scws_t)(hidoc->segmentor), dict_charset);
             scws_set_rule((scws_t)(hidoc->segmentor), dict_rules);
             scws_set_dict((scws_t)(hidoc->segmentor), dict_file, SCWS_XDICT_XDB);
+			scws_set_multi((scws_t)(hidoc->segmentor), (mode << 12));
             for(i = 0; i < IB_SEGMENTORS_MIN; i++)
             {
                 if((segmentor = scws_new()))
@@ -525,6 +526,7 @@ int hidoc_set_dict(HIDOC *hidoc, char *dict_file, char *dict_charset, char *dict
                     ((scws_t)(segmentor))->r = ((scws_t)(hidoc->segmentor))->r;
                     ((scws_t)(segmentor))->d = ((scws_t)(hidoc->segmentor))->d;
                     ((scws_t)(segmentor))->mblen = ((scws_t)(hidoc->segmentor))->mblen;
+                    ((scws_t)(segmentor))->mode = ((scws_t)(hidoc->segmentor))->mode;
                     //scws_set_charset((scws_t)(segmentor), hidoc->dict_charset);
                     //scws_set_rule((scws_t)(segmentor), hidoc->dict_rules);
                     //scws_set_dict((scws_t)(segmentor), hidoc->dict_file, SCWS_XDICT_XDB);
@@ -602,6 +604,7 @@ void *hidoc_pop_segmentor(HIDOC *hidoc)
                 ((scws_t)(segmentor))->r = ((scws_t)(hidoc->segmentor))->r;
                 ((scws_t)(segmentor))->d = ((scws_t)(hidoc->segmentor))->d;
                 ((scws_t)(segmentor))->mblen = ((scws_t)(hidoc->segmentor))->mblen;
+                ((scws_t)(segmentor))->mode = ((scws_t)(hidoc->segmentor))->mode;
                 //scws_set_charset((scws_t)(segmentor), hidoc->dict_charset);
                 //scws_set_rule((scws_t)(segmentor), hidoc->dict_rules);
                 //scws_set_dict((scws_t)(segmentor), hidoc->dict_file, SCWS_XDICT_XDB);
@@ -866,7 +869,7 @@ int hidoc_set_bterm(HIDOC *hidoc, char *term, int nterm, int status)
     char line[HI_LINE_SIZE];
     BSTERM *bsterms = NULL;
 
-    if(hidoc && term && nterm > 0 
+    if(hidoc && term && nterm > 0 && (nterm <= HI_TERM_SIZE)
             && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), term, nterm)) > 0
             &&  (n = sprintf(line, "b:%d", termid)) > 0
             && (xid = mmtrie_xadd((MMTRIE *)(hidoc->map), line, n)) > 0
@@ -875,11 +878,13 @@ int hidoc_set_bterm(HIDOC *hidoc, char *term, int nterm, int status)
         MUTEX_LOCK(hidoc->mutex);
         CHECK_BSTERMIO(hidoc, xid);
         if(xid > hidoc->state->bterm_id_max) hidoc->state->bterm_id_max = xid;
+		/*
         if(nterm > HI_TERM_SIZE)
         {
             WARN_LOGGER(hidoc->logger, "term:%.*s too long than len:%d", nterm, term, HI_TERM_SIZE);
         }
         else
+		*/
         {
             bsterms[xid].bterm.id = termid;
             bsterms[xid].bterm.status = status;
@@ -965,7 +970,7 @@ int hidoc_add_bterm(HIDOC *hidoc, char *term, int nterm)
     char line[HI_LINE_SIZE];
     BSTERM *bsterms = NULL;
 
-    if(hidoc && term && nterm > 0 
+    if(hidoc && term && nterm > 0 && (nterm <= HI_TERM_SIZE)
             && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), term, nterm)) > 0
             &&  (n = sprintf(line, "b:%d", termid)) > 0
             && (xid = mmtrie_xadd((MMTRIE *)(hidoc->map), line, n)) > 0
@@ -974,11 +979,13 @@ int hidoc_add_bterm(HIDOC *hidoc, char *term, int nterm)
         MUTEX_LOCK(hidoc->mutex);
         CHECK_BSTERMIO(hidoc, xid);
         if(xid > hidoc->state->bterm_id_max) hidoc->state->bterm_id_max = xid;
+		/*
         if(nterm > HI_TERM_SIZE)
         {
             WARN_LOGGER(hidoc->logger, "term:%.*s too long than len:%d", nterm, term, HI_TERM_SIZE);
         }
         else
+		*/
         {
             bsterms[xid].bterm.id = termid;
             bsterms[xid].bterm.status = IB_BTERM_BLOCK;

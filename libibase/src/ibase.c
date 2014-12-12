@@ -97,7 +97,7 @@ int ibase_mkdir(char *path)
 }
 
 /* set dict file */
-int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dict_file, char *dict_rules)
+int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dict_file, char *dict_rules, int mode)
 {
     int i = 0;
 
@@ -113,6 +113,7 @@ int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dict_file, char *dict
             scws_set_charset((scws_t)(ibase->segmentor), dict_charset);
             scws_set_rule((scws_t)(ibase->segmentor), dict_rules);
             scws_set_dict((scws_t)(ibase->segmentor), dict_file, SCWS_XDICT_XDB);
+			scws_set_multi((scws_t)(ibase->segmentor), (mode << 12));
             for(i = 0; i < IB_SEGMENTORS_MIN; i++)
             {
                 if((segmentor = scws_new()))
@@ -124,6 +125,7 @@ int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dict_file, char *dict
                     ((scws_t)segmentor)->d = ((scws_t)ibase->segmentor)->d;
                     ((scws_t)segmentor)->r = ((scws_t)ibase->segmentor)->r;
                     ((scws_t)segmentor)->mblen = ((scws_t)ibase->segmentor)->mblen;
+                    ((scws_t)segmentor)->mode = ((scws_t)ibase->segmentor)->mode;
                     ibase->nqsegmentors++;
                 }
             }
@@ -813,6 +815,7 @@ void *ibase_pop_segmentor(IBASE *ibase)
                 ((scws_t)segmentor)->d = ((scws_t)ibase->segmentor)->d;
                 ((scws_t)segmentor)->r = ((scws_t)ibase->segmentor)->r;
                 ((scws_t)segmentor)->mblen = ((scws_t)ibase->segmentor)->mblen;
+                ((scws_t)segmentor)->mode = ((scws_t)ibase->segmentor)->mode;
                 //scws_set_charset((scws_t)(segmentor), ibase->dict_charset);
                 //scws_set_rule((scws_t)(segmentor), ibase->dict_rules);
                 //scws_set_dict((scws_t)(segmentor), ibase->dict_file, SCWS_XDICT_XDB);

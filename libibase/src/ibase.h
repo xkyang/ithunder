@@ -816,7 +816,7 @@ IBASE *ibase_init();
 /* mkdir force */
 int ibase_set_basedir(IBASE *, char *dir, int use_for, int mmsource_status);
 /* set dict file */
-int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dictfile, char *rules);
+int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dictfile, char *rules, int mode);
 void ibase_check_mindex(IBASE *ibase, int secid);
 /* set int index */
 int ibase_set_int_index(IBASE *ibase, int secid, int index_from, int index_fields_count);

@@ -1932,7 +1932,7 @@ IBASE *ibase_init_db(int dbid)
                 && (charset = iniparser_getstr(dict, "IBASE:dict_charset")))
         {
             rules = iniparser_getstr(dict, "IBASE:dictrules");
-            ibase_set_dict(db, charset, p, rules);
+            ibase_set_dict(db, charset, p, rules, iniparser_getint(dict, "IBASE:multi_mode", 0));
         }
         db->set_index_status(db, iniparser_getint(dict, "IBASE:index_status", 0));
         db->set_phrase_status(db, iniparser_getint(dict, "IBASE:phrase_status", 0));

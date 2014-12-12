@@ -1140,7 +1140,7 @@ void cb_heartbeat_handler(void *arg)
 int sbase_initialize(SBASE *sbase, char *conf)
 {
     char *s = NULL, *p = NULL, *dictfile = NULL, *dictrules = NULL, line[256];
-    int interval = 0, i = 0, n = 0, pidfd = 0;// from = 0, count = 0;
+    int interval = 0, i = 0, n = 0, pidfd = 0, mode = 0;// from = 0, count = 0;
 
     if((dict = iniparser_new(conf)) == NULL)
     {
@@ -1253,7 +1253,8 @@ int sbase_initialize(SBASE *sbase, char *conf)
         hidoc->set_basedir(hidoc, iniparser_getstr(dict, "HIDOCD:basedir"), ntask);
         dictrules = iniparser_getstr(dict, "HIDOCD:dictrules");
         dictfile = iniparser_getstr(dict, "HIDOCD:dictfile");
-        hidoc->set_dict(hidoc, dictfile, http_default_charset, dictrules);
+        mode = iniparser_getint(dict, "HIDOCD:multi_mode", 0);
+        hidoc->set_dict(hidoc, dictfile, http_default_charset, dictrules,mode);
         hidoc->set_ccompress_status(hidoc, iniparser_getint(dict, "HIDOCD:ccompress_status", 0));
         hidoc->set_phrase_status(hidoc, iniparser_getint(dict, "HIDOCD:phrase_status", 0));
         hidoc->state->need_update_numbric = iniparser_getint(dict, "HIDOCD:need_update_numric", 0);

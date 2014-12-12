@@ -23,6 +23,8 @@
         .xheader{position:relative;background-color:#2F5FA1;color:#c0c0c0; height:30px;}
         </style>
         <script language='javascript'>
+            var rangefilter = "";
+            var infilter = "";
             var idisplay = "display=0$,1$,2$,3,4,5,6,7,8,9";
             var base64EncodeChars = 
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -371,7 +373,6 @@
                 var multicat = "";
                 var catblock = "";
                 var catgroup = "";
-                var rangefilter = "";
                 var xup = "";
                 var xdown = "";
                 var orderby = 0;
@@ -499,6 +500,7 @@
                     }
                     */
                     if(rangefilter) uri += "&rangefilter="+rangefilter.substring(0, rangefilter.length-1);
+                    if(infilter) uri += "&in="+infilter;
                     if(catfilter) uri += "&catfilter="+catfilter.substring(0, catfilter.length-1);
                     if(multicat) uri += "&multicat="+multicat.substring(0, multicat.length-1);
                     if(catgroup) uri += "&catgroup="+catgroup.substring(0, catgroup.length-1);
@@ -650,6 +652,19 @@
                 </select>
                 发帖时间:从<input type=text name=datefrom size=8 >&nbsp;到&nbsp;<input type=text name=dateto size=8 >(格式:2010-05-10)
                 &nbsp;&nbsp;
+                <hr>
+                过滤字段:<select name='field'>
+                <option selected="selected" value="-1">无</option>
+                </select>
+                &nbsp;&nbsp;
+				<select name='filter'>
+                  <option selected="selected" value="in">In</option>
+	   	          <option value="rangefilter">Range</option>
+                </select>
+                &nbsp;&nbsp;
+			    <input type=text name='fieldfrom' size=8>&nbsp;
+                <input type=text name='fieldto' size=8> &nbsp;
+                <input type=button value='Add' onclick="javascript:makeInRange();">
                 <hr>
                 &nbsp;&nbsp;
                 想查找:<input type=text name='query' size=48 >
