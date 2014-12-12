@@ -830,6 +830,7 @@
                                 if((obj = document.getElementById('dumpfile')))
                                 {
                                     var res = eval(xmlHttp.responseText);
+									//var source = res.source.substring(res.source.lastIndexOf("/")+1);
                                     var html = "当前数据源:"+res.source+"&nbsp;&nbsp;[<font color='#5FB404'>"+res.offset+"</font>/<font color=red>"+res.size+"</font>]<hr>";
                                     obj.innerHTML = html;
                                 }

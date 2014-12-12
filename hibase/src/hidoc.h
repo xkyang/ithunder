@@ -237,7 +237,7 @@ typedef struct _HIDOC
     int (*set_double_index)(struct _HIDOC *, int double_index_from, int double_index_count);
     int (*set_phrase_status)(struct _HIDOC *, int status);
     int (*set_ccompress_status)(struct _HIDOC *, int status);
-    int (*set_dict)(struct _HIDOC *, char *dictfile, char *charset, char *rules);
+    int (*set_dict)(struct _HIDOC *, char *dictfile, char *charset, char *rules, int mode);
     //int (*set_forbidden_dict)(struct _HIDOC *, char *dictfile);
     int (*resume)(struct _HIDOC *);
     int (*genindex)(struct _HIDOC *, HINDEX *hindex, FHEADER *fheader, IFIELD *fields, int nfields, 
