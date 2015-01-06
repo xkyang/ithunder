@@ -606,6 +606,16 @@ int hidoc_set_phrase_status(HIDOC *hidoc, int status)
     return -1;
 }
 
+int hidoc_set_del_status(HIDOC *hidoc, int status)
+{
+    if(hidoc && hidoc->state)
+    {
+        hidoc->state->del_status = status;
+        return 0;
+    }
+    return -1;
+}
+
 #define CHECK_BSTERMIO(hidoc, xid)                                                          \
 do                                                                                          \
 {                                                                                           \
@@ -1181,7 +1191,20 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                         FATAL_LOGGER(hidoc->logger, "Invalid xindex[%d].nodeid[%d] to task[%s:%d].nodeid:%d", id, xindexs[id].nodeid, tasks[k].ip, tasks[k].port, nodeid);
                         _exit(-1);
                     }
-                    if((n = db_get_data_len(PDB(hidoc->db), id)) <= (left - HI_LEFT_LEN))
+                    n = db_get_data_len(PDB(hidoc->db), id);
+                    if((n == 0) && (xindexs[id].status < 0))
+					{
+					   if(hidoc->state->del_status == HI_DELSTATUS_PHYSICS)
+					   {
+					      continue;
+					   }
+					   else
+					   {
+                          FATAL_LOGGER(hidoc->logger, "Invalid data id:%lld globalid:%lld in db", id, LL64(xindexs[id].globalid));
+                          break;
+					   }
+					}
+                    if(n <= (left - HI_LEFT_LEN))
                     {
                         px = (int *)p;
                         p += sizeof(int);
@@ -1200,6 +1223,10 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                             docheader->slevel = xindexs[id].slevel;
                             docheader->category = xindexs[id].category;
                             docheader->rank = xindexs[id].rank;
+					        if((xindexs[id].status < 0) && (hidoc->state->del_status == HI_DELSTATUS_PHYSICS))
+							{
+							   db_del_data(PDB(hidoc->db), id);
+							}
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
@@ -2792,7 +2819,25 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                             tasks[k].mmqid = 0;tasks[k].nqueue = 0;
                             break;
                         }
-                        if(db_get_data_len(PDB(hidoc->db), mid) > (left-HI_LEFT_LEN)) break;
+                        n = db_get_data_len(PDB(hidoc->db), mid);
+                        if((n == 0) && (xindexs[mid].status < 0))
+					    {
+					       if(hidoc->state->del_status == HI_DELSTATUS_PHYSICS)
+					       {
+                              mmqueue_pop(MMQ(hidoc->mmqueue),tasks[k].mmqid, &mid);
+                              tasks[k].nqueue--;
+                              id = mmqueue_head(MMQ(hidoc->mmqueue), tasks[k].mmqid, &mid);
+					          continue;
+					       }
+					       else
+					       {
+                              FATAL_LOGGER(hidoc->logger, "Invalid data id:%lld globalid:%lld in db", mid, LL64(xindexs[mid].globalid));
+                              mid = -1;
+                              _exit(-1);
+                              break;
+					       }
+					    }
+                        if(n > (left-HI_LEFT_LEN)) break;
                         tasks[k].upid = mid;
                         px = (int *)p;
                         p += sizeof(int);
@@ -2805,6 +2850,10 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                             docheader->slevel = xindexs[mid].slevel;
                             docheader->category = xindexs[mid].category;
                             docheader->rank = xindexs[mid].rank;
+					        if((xindexs[mid].status < 0) && (hidoc->state->del_status == HI_DELSTATUS_PHYSICS))
+							{
+							   db_del_data(PDB(hidoc->db), mid);
+							}
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
@@ -3363,6 +3412,7 @@ HIDOC *hidoc_init()
         //hidoc->set_forbidden_dict       = hidoc_set_forbidden_dict;
         hidoc->set_ccompress_status     = hidoc_set_ccompress_status;
         hidoc->set_phrase_status        = hidoc_set_phrase_status;
+        hidoc->set_del_status           = hidoc_set_del_status;
         hidoc->genindex                 = hidoc_genindex;
         hidoc->set_dump                 = hidoc_set_dump;
         hidoc->get_dumpinfo             = hidoc_get_dumpinfo;
