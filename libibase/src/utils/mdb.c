@@ -201,11 +201,11 @@ MDB *mdb_init(char *dbdir, int mode)
                     db->dbsio[i].size = st.st_size;
                 }
                 MDB_CHECK_MMAP(db, i);
-                //WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
+                WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
                 if(db->dbsio[i].map && db->state->last_id == 0 && db->state->last_off == 0)
                 {
                     memset(db->dbsio[i].map, 0, MDB_MFILE_SIZE);
-                    //WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
+                    WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
                 }
             }
             else
@@ -328,7 +328,7 @@ void mdb_push_mblock(MDB *db, char *mblock, int block_index)
         }
         else
         {
-            //WARN_LOGGER(db->logger, "free-xblock[%d]{%d}->total:%d", block_index, mdb_xblock_list[block_index].block_size, db->xblocks[block_index].total);
+            WARN_LOGGER(db->logger, "free-xblock[%d]{%d}->total:%d", block_index, mdb_xblock_list[block_index].block_size, db->xblocks[block_index].total);
             db->xx_total += (off_t)mdb_xblock_list[block_index].block_size;
             xmm_free(mblock, mdb_xblock_list[block_index].block_size);
             --(db->xblocks[block_index].total);
@@ -349,7 +349,7 @@ char *mdb_pop_mblock(MDB *db, int block_index)
         if(db->xblocks[block_index].nmblocks > 0)
         {
             x = --(db->xblocks[block_index].nmblocks);
-            //WARN_LOGGER(db->logger, "pop_qmblock() block_index:%d nmblocks:%d", block_index, x);
+            WARN_LOGGER(db->logger, "pop_qmblock() block_index:%d nmblocks:%d", block_index, x);
             mblock = db->xblocks[block_index].mblocks[x];
             db->xblocks[block_index].mblocks[x] = NULL;
         }
@@ -377,7 +377,7 @@ char *mdb_new_data(MDB *db, size_t size)
         if(size > MDB_MBLOCK_MAX)
         {
             data = (char *)xmm_new(size);
-            //WARN_LOGGER(db->logger, "xmm_new(%lu)", size);
+            WARN_LOGGER(db->logger, "xmm_new(%lu)", size);
         }
         else 
         {
@@ -408,7 +408,7 @@ void mdb_free_data(MDB *db, char *data, size_t size)
     {
         if(size > MDB_MBLOCK_MAX) 
         {
-            //WARN_LOGGER(db->logger, "xmm_free(%p,%lu)", data, size);
+            WARN_LOGGER(db->logger, "xmm_free(%p,%lu)", data, size);
             xmm_free(data, size);
         }
         else 
@@ -556,7 +556,7 @@ int mdb_pop_block(MDB *db, int blocks_count, XMLNK *lnk)
         RWLOCK_UNLOCK(db->mutex_lnk);
         if(block_id >= 0)
         {
-            ACCESS_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", block_id, mdb_id, block_size);
+            DEBUG_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", block_id, mdb_id, block_size);
             mdb_push_block(db, mdb_id, block_id, block_size);
 
         }
@@ -663,7 +663,7 @@ int mdb__set__data(MDB *db, int id, char *data, int ndata)
                 dbx[id].index = lnk.index;
                 dbx[id].blockid = lnk.blockid;
                 dbx[id].block_size = blocks_count * MDB_BASE_SIZE;
-                ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
+                DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
                 if(ndata > dbx[id].block_size)
                 {
                     FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d", lnk.blockid, ndata, blocks_count);
@@ -718,7 +718,7 @@ int mdb__set__data(MDB *db, int id, char *data, int ndata)
         mdb_mutex_unlock(db, id);
         if(old.count > 0)
         {
-            ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, old.blockid, old.index, old.count * MDB_BASE_SIZE);
+            DEBUG_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, old.blockid, old.index, old.count * MDB_BASE_SIZE);
             mdb_push_block(db, old.index, old.blockid, old.count * MDB_BASE_SIZE);
         }
     }
@@ -777,7 +777,7 @@ int mdb_set_data(MDB *db, int id, char *data, int ndata)
     if(db && id >= 0 && data && ndata > 0)
     {
         ret = mdb__set__data(db, id, data, ndata);
-        //WARN_LOGGER(db->logger, "id:%d ndata:%d ret:%d", id, ndata, ret);
+        WARN_LOGGER(db->logger, "id:%d ndata:%d ret:%d", id, ndata, ret);
     }
     return ret;
 }
@@ -889,7 +889,7 @@ int mdb__add__data(MDB *db, int id, char *data, int ndata)
             dbx[id].index = lnk.index;
             dbx[id].blockid = lnk.blockid;
             dbx[id].block_size = lnk.count * MDB_BASE_SIZE;
-            ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_count:%d block_size:%d size:%d",id, lnk.blockid, lnk.index, blocks_count, dbx[id].block_size, size);
+            DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_count:%d block_size:%d size:%d",id, lnk.blockid, lnk.index, blocks_count, dbx[id].block_size, size);
         }
         //write data
         if((index = dbx[id].index) >= 0 && db->dbsio[index].fd > 0)
@@ -919,7 +919,7 @@ int mdb__add__data(MDB *db, int id, char *data, int ndata)
         if(old_lnk.count > 0)
         {
 
-            ACCESS_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", old_lnk.blockid, old_lnk.index, old_lnk.count * MDB_BASE_SIZE);
+            DEBUG_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", old_lnk.blockid, old_lnk.index, old_lnk.count * MDB_BASE_SIZE);
             mdb_push_block(db, old_lnk.index, old_lnk.blockid, old_lnk.count * MDB_BASE_SIZE);
         }
     }
@@ -999,14 +999,14 @@ int mdb__resize(MDB *db, int id, int length)
             dbx[id].index = lnk.index;
             dbx[id].blockid = lnk.blockid;
             dbx[id].block_size = lnk.count * MDB_BASE_SIZE;
-            ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_count:%d block_size:%d size:%d",id, lnk.blockid, lnk.index, blocks_count, dbx[id].block_size, size);
+            DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_count:%d block_size:%d size:%d",id, lnk.blockid, lnk.index, blocks_count, dbx[id].block_size, size);
         }
         dbx[id].mod_time = (int)time(NULL);
         mdb_mutex_unlock(db, id);
         if(old_lnk.count > 0)
         {
 
-            ACCESS_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", old_lnk.blockid, old_lnk.index, old_lnk.count * MDB_BASE_SIZE);
+            DEBUG_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", old_lnk.blockid, old_lnk.index, old_lnk.count * MDB_BASE_SIZE);
             mdb_push_block(db, old_lnk.index, old_lnk.blockid, old_lnk.count * MDB_BASE_SIZE);
         }
     }
@@ -1105,7 +1105,7 @@ void *mdb_truncate_block(MDB *db, int id, int ndata)
                 dbx[id].index = lnk.index;
                 dbx[id].blockid = lnk.blockid;
                 dbx[id].block_size = blocks_count * MDB_BASE_SIZE;
-                ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
+                DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
                 if(ndata > dbx[id].block_size)
                 {
                     FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d", lnk.blockid, ndata, blocks_count);
@@ -1140,7 +1140,7 @@ void *mdb_truncate_block(MDB *db, int id, int ndata)
         mdb_mutex_unlock(db, id);
         if(old.count > 0)
         {
-            ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, old.blockid, old.index, old.count * MDB_BASE_SIZE);
+            DEBUG_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, old.blockid, old.index, old.count * MDB_BASE_SIZE);
             mdb_push_block(db, old.index, old.blockid, old.count * MDB_BASE_SIZE);
         }
     }
@@ -1383,7 +1383,7 @@ int mdb_del_data(MDB *db, int id)
     {
         if((dbx = (MDBX *)(db->dbxio.map)))
         {
-            ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
+            DEBUG_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
             if(dbx[id].block_size > 0)
             {
                 mdb_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
@@ -1412,7 +1412,7 @@ int mdb_xdel_data(MDB *db, char *key, int nkey)
         if((id = mmtrie_get(MMTR(db->kmap), key, nkey)) >= 0
                 && (dbx = (MDBX *)(db->dbxio.map)))
         {
-            ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
+            DEBUG_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
             if(dbx[id].block_size > 0)
             {
                 mdb_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);

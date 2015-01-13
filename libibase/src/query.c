@@ -46,7 +46,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
         }
         else
         {
-            //ACCESS_LOGGER(ibase->logger, "pop chunk failed, %s", strerror(errno));
+            DEBUG_LOGGER(ibase->logger, "pop chunk failed, %s", strerror(errno));
             goto end;
         }
         topmap = ibase_pop_stree(ibase);
@@ -337,7 +337,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             /* multicat filter */
             if(query->multicat_filter != 0 && (query->multicat_filter & headers[docid].category) != query->multicat_filter)
                 goto next;
-            //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nquerys:%d/%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), query->nqterms, query->int_range_count, query->int_bits_count, query->catgroup_filter);
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nquerys:%d/%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), query->nqterms, query->int_range_count, query->int_bits_count, query->catgroup_filter);
             /* in/range filter */
             if(query->int_inset_count > 0)
             {
@@ -556,10 +556,10 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             }
             /* rank */
             doc_score = IB_LONG_SCORE(base_score);
-            //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), IBLL(doc_score));
             if(ignore_rank == 0 && is_sort_reverse && (query->flag & IB_QUERY_RANK)) 
                doc_score += IBLONG((headers[docid].rank*(double)(query->base_rank)));
-            //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
 /*	    
             if(is_field_sort && min_set_fid != fid)
             {
@@ -604,7 +604,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             /* sorting */
             //if(min_set_fid != fid)
             {
-                //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
+                DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
                 if(MTREE64_TOTAL(topmap) >= query->ntop)
                 {
                     xdata = 0ll;

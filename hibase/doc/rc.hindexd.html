@@ -358,6 +358,36 @@
                 }
                 else alert("没有找到相关的结果");
             }
+            function makeInRange()
+            {
+                var form = document.forms['search'];
+                var field = -1;
+                if(form['field'] && ((field = form['field'].value) > -1))
+                {
+                    var filter = form['filter'].value;
+                    if(filter == "in")
+                    {
+                       if(form['fieldfrom'].value)
+                       {
+                          infilter += field + ":[" + form['fieldfrom'].value + "];";
+                       }
+                    }
+                    else
+                    {
+                       rangefilter += field + ":[";
+                       if(form['fieldfrom'].value)
+                       {
+                          rangefilter += form['fieldfrom'].value + ",";
+                       }
+                       if(form['fieldto'].value)
+                       {
+                          rangefilter += form['fieldto'].value;
+                       }
+                       rangefilter += "];";
+                    }
+					alert("请继续添加或执行查找");
+                }
+            }
             //so
             function so(page)
             {
@@ -380,9 +410,9 @@
                 var datetime = null;
                 var datefrom = 0;
                 var dateto = 0;
-                if((form && (query = form['query'].value) != "")
-                    && (xmlHttp = CreateXMLHTTP()) != null)
-                {
+                if(form && (xmlHttp = CreateXMLHTTP()) != null)
+                { 
+					query = form['query'].value;
                     if(page <= 0) page_num = 1;
                     from = (page_num - 1) * 15;
                     hideresult();
@@ -526,7 +556,9 @@
                         }
                     }
                     xmlHttp.send();
-                }else alert("请输入关键词");
+					infilter = "";
+					rangefilter = "";
+                }
             }
             function clear_cache(obj)
             {

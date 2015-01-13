@@ -140,7 +140,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 iheader->slevel      = docheader->slevel;
                 iheader->rank        = docheader->rank;
                 iheader->globalid    = docheader->globalid;
-                //WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
+                WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
             }
         }
         /* index */
@@ -204,7 +204,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     }
 					else
 					{
-                       ACCESS_LOGGER(ibase->logger, "INDEX-STR{%.*s} termid:%d in doc:%d/%lld/%d", termlist[i].term_len, term, termid, 
+                       DEBUG_LOGGER(ibase->logger, "INDEX-STR{%.*s} termid:%d in doc:%d/%lld/%d", termlist[i].term_len, term, termid, 
 							        docid,IBLL(docheader->globalid),ndocid);
 					}
                     mdb_set_tag(PMDB(index), termid, docid);
@@ -463,7 +463,7 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
             if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
                     && ibase->state->mmsource_status != IB_MMSOURCE_NULL && localid > 0)
             {
-                ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
+                DEBUG_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
                 docheader->size = docheader->prevnext_off;
                 ret = db_set_data(PDB(ibase->source), localid, block->data, docheader->size);
             }

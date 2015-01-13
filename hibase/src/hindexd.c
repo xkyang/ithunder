@@ -1553,7 +1553,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         }
         if(phrase > 0) query->flag |= IB_QUERY_PHRASE;
         if(booland > 0) query->flag |= IB_QUERY_BOOLAND;
-        if(query_str)
+        //if(query_str)
         {
             ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld secblock:%lld norderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), LL64(query->secblock_filter), norderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
         }

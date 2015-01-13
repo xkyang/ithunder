@@ -64,9 +64,9 @@ void expr_print_range(EXPR *expr)
 {
    if(expr)
    {
-      ACCESS_LOGGER(expr->logger,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
-      ACCESS_LOGGER(expr->logger,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
-      ACCESS_LOGGER(expr->logger,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
+      DEBUG_LOGGER(expr->logger,"int_range:(%d -> %d)\n",expr->int_range.from,expr->int_range.to);
+      DEBUG_LOGGER(expr->logger,"long_range:(%d -> %d)\n",expr->long_range.from,expr->long_range.to);
+      DEBUG_LOGGER(expr->logger,"double_range:(%d -> %d)\n",expr->double_range.from,expr->double_range.to);
    }
 }
 
@@ -86,7 +86,7 @@ void expr_print(EXPR *expr)
       int i = 0;
       for(;i<expr->num;++i)
       {
-         ACCESS_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
+         DEBUG_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c\n",i,expr->list[i].field,
 			expr->list[i].opnd,expr->list[i].optr);
       }
    }
@@ -122,7 +122,7 @@ int expr_set(EXPR *expr, const char* str, int len)
     int ret = -1, k = -1, field = 0, opnd = 0, optr = 0;
     if(expr && str && (len > 0))
     {
-        ACCESS_LOGGER(expr->logger, "DEBUG:[%s] for expr_set\n", str);
+        DEBUG_LOGGER(expr->logger, "DEBUG:[%s] for expr_set\n", str);
         const char* p = str;
 	    while(*p!='\0')
 	    {
@@ -147,7 +147,7 @@ int expr_set(EXPR *expr, const char* str, int len)
 			             if((field >= expr->double_range.from) && 
 			                (field < expr->double_range.to))
 			             {
-                            ACCESS_LOGGER(expr->logger, "ERROR:[%s] for double[%d:%d] shift\n", str,
+                            DEBUG_LOGGER(expr->logger, "ERROR:[%s] for double[%d:%d] shift\n", str,
 		                    expr->double_range.from,expr->double_range.to);
                              return -1;
 			             }
@@ -155,7 +155,7 @@ int expr_set(EXPR *expr, const char* str, int len)
                        }
                        else //wrong expression
                        {
-                          ACCESS_LOGGER(expr->logger, "ERROR:[%s] for shift\n", str);
+                          DEBUG_LOGGER(expr->logger, "ERROR:[%s] for shift\n", str);
                           return -1;
                        }
                     }
@@ -167,7 +167,7 @@ int expr_set(EXPR *expr, const char* str, int len)
                     }
 		            if(((optr == '/') || (optr == '%')) && (opnd == 0))
 		            {
-                       ACCESS_LOGGER(expr->logger, "ERROR:[%s] for divide 0\n", str);
+                       DEBUG_LOGGER(expr->logger, "ERROR:[%s] for divide 0\n", str);
 		               return -1;
 		            }
 	                while((*p!='\0')&&(!ISOPTR(p)))++p;
@@ -175,7 +175,7 @@ int expr_set(EXPR *expr, const char* str, int len)
 	                {
                        if(*p != '+') //wrong expression
 	                   {
-                          ACCESS_LOGGER(expr->logger, "ERROR:[%s] for concat(+):%c\n", str,*p);
+                          DEBUG_LOGGER(expr->logger, "ERROR:[%s] for concat(+):%c\n", str,*p);
 	                      return -1;
 	                   }
 	                   else
@@ -188,12 +188,12 @@ int expr_set(EXPR *expr, const char* str, int len)
 	     }
 	     if(expr__field__valid(expr,field) == 0)
 	     {
-           ACCESS_LOGGER(expr->logger, "ERROR:[%d] is wrong range\n", field);
+           DEBUG_LOGGER(expr->logger, "ERROR:[%d] is wrong range\n", field);
 	       return -1;
 	     }
 	     if((optr == '@') && (expr__field__valid(expr,opnd) == 0)) //时间刷新
 	     {
-           ACCESS_LOGGER(expr->logger, "ERROR:time refresh [%d] is wrong range\n", opnd);
+           DEBUG_LOGGER(expr->logger, "ERROR:time refresh [%d] is wrong range\n", opnd);
 	       return -1;
 	     }
 	     if(expr->num < EXPR_ELEM_MAX)
@@ -205,7 +205,7 @@ int expr_set(EXPR *expr, const char* str, int len)
 	     }
 	     else
 	     {
-           ACCESS_LOGGER(expr->logger, "WARNING:expr num is much more field:%d\n", field);
+           DEBUG_LOGGER(expr->logger, "WARNING:expr num is much more field:%d\n", field);
 	       break;
 	    }
 	  }
@@ -231,7 +231,7 @@ int64_t expr__time__refresh(EXPR* expr,long post_at,long refresh_at)
     long new_time = (day_begin > old_time) ? day_begin : old_time;
 	if(expr)
 	{
-       ACCESS_LOGGER(expr->logger, "TIME:now:%ld post_at:%ld max(day_begin:%ld old_time:%ld refresh_at:%ld) = new_time:%ld\n", now,post_at,day_begin,old_time,refresh_at,new_time);
+       DEBUG_LOGGER(expr->logger, "TIME:now:%ld post_at:%ld max(day_begin:%ld old_time:%ld refresh_at:%ld) = new_time:%ld\n", now,post_at,day_begin,old_time,refresh_at,new_time);
 	}
     return new_time << TIME_REFRESH_SHIFT;
 }
@@ -258,7 +258,7 @@ int64_t expr__map__value(EXPR* expr,IBSTATE* state,int field,int secid,int docid
           value = IB_LONG_SCORE(DMAP_GET(state->mfields[secid][fid], docid));
        } 
 	}
-    ACCESS_LOGGER(expr->logger,"field:%d fid:%d value:%ld in secid:%d docid:%d\n",field,fid,value,secid,docid);
+    DEBUG_LOGGER(expr->logger,"field:%d fid:%d value:%ld in secid:%d docid:%d\n",field,fid,value,secid,docid);
 	return value;
 }
 
@@ -341,7 +341,7 @@ int64_t expr__operate(EXPR* expr,IBSTATE* state,int i,int secid,int docid)
    	        ret = value; 
    	   break;
        }
-       ACCESS_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c value/2:%ld/%ld result:%ld in secid:%d docid:%d\n",i,field,e->opnd,e->optr,value,value2,ret,secid,docid);
+       DEBUG_LOGGER(expr->logger,"i:%d field:%d opnd:%d optr:%c value/2:%ld/%ld result:%ld in secid:%d docid:%d\n",i,field,e->opnd,e->optr,value,value2,ret,secid,docid);
     }
     return ret;
 }
@@ -402,7 +402,7 @@ int64_t expr_cal(EXPR *expr,IBSTATE* state,int secid,int docid)
  	        ret += expr__operate(expr,state,i,secid,docid);
         }
     }
-    ACCESS_LOGGER(expr->logger, "expr_cal result:%ld\n", ret);
+    DEBUG_LOGGER(expr->logger, "expr_cal result:%ld\n", ret);
     return ret;
 }
 

@@ -261,12 +261,12 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                 if(ibase->state->mmsource_status == IB_MMSOURCE_ENABLED)
                 {
                     ibase->source = db_init(path, 1);
-                    ACCESS_LOGGER(ibase->logger, "db_init(%s, 1)", path);
+                    DEBUG_LOGGER(ibase->logger, "db_init(%s, 1)", path);
                 }
                 else
                 {
                     ibase->source = db_init(path, 0);
-                    ACCESS_LOGGER(ibase->logger, "db_init(%s, 0)", path);
+                    DEBUG_LOGGER(ibase->logger, "db_init(%s, 0)", path);
                 }
             }
         }
@@ -847,10 +847,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
     if(ibase && query_str && query && (termstates = ((TERMSTATE *)ibase->termstateio.map)))
     {
         nqterms = query->nqterms;
-        ACCESS_LOGGER(ibase->logger, "Ready parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
+        DEBUG_LOGGER(ibase->logger, "Ready parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         if((segmentor = (scws_t)ibase_pop_segmentor(ibase)))
         {
-            ACCESS_LOGGER(ibase->logger, "starting parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
+            DEBUG_LOGGER(ibase->logger, "starting parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
             memcpy(qterms, query->qterms, sizeof(QTERM) * IB_QUERY_MAX);
             memset(xqterms, 0, sizeof(QTERM) * IB_QUERY_MAX);
             for(i = 0; i < nqterms; i++){xqterms[i].id = qterms[i].id;list[i]=i;}
@@ -873,7 +873,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             continue;
                         }
                         nterm = cur->len;
-                        ACCESS_LOGGER(ibase->logger, "seg-result-1:|%.*s| len:%d in query_str:%s ", nterm, s, nterm, query_str);
+                        DEBUG_LOGGER(ibase->logger, "seg-result-1:|%.*s| len:%d in query_str:%s ", nterm, s, nterm, query_str);
                         if(last == cur->off) prevnext = 1;
                         else prevnext = 0;
                         last = cur->off + cur->len;
@@ -907,10 +907,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         *p = '\0';
                         if((nterm = (p - line)) > 0)
                         {
-                            ACCESS_LOGGER(ibase->logger, "seg-result-2:|%s| len:%d in query_str:%s ", line, nterm, query_str);
+                            DEBUG_LOGGER(ibase->logger, "seg-result-2:|%s| len:%d in query_str:%s ", line, nterm, query_str);
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
-                                ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
+                                DEBUG_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
                                     found = -1;x = -1;
@@ -980,11 +980,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         last_no = x;
                                     }
                                 }
-                                ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
+                                DEBUG_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {
-                                ACCESS_LOGGER(ibase->logger, "term:%s len:%d in query_str:%s not found", line, nterm, query_str);
+                                DEBUG_LOGGER(ibase->logger, "term:%s len:%d in query_str:%s not found", line, nterm, query_str);
                                 x = -1;
                                 for(i = 0; i < nxqterms; i++)
                                 {
@@ -1029,7 +1029,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         {
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
-                                ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
+                                DEBUG_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
                                     found = -1;x = -1;
@@ -1089,16 +1089,13 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                             query->flag |= IB_QUERY_FIELDS;
                                             qterms[x].bitnot |= 1 << fid;
                                         }
-                                        else
-                                        {
-                                            qterms[x].flag |= QTERM_BIT_NOT;
-                                        }
+                                        qterms[x].flag |= QTERM_BIT_NOT;
                                     }
                                 }
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {
-                                ACCESS_LOGGER(ibase->logger, "term:%s len:%d in not_str:%s not found", line, nterm, not_str);
+                                DEBUG_LOGGER(ibase->logger, "term:%s len:%d in not_str:%s not found", line, nterm, not_str);
                                 x = -1;
                                 for(i = 0; i < nxqterms; i++)
                                 {
@@ -1120,12 +1117,13 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 }
             }
             ibase_push_segmentor(ibase, segmentor);
-            ACCESS_LOGGER(ibase->logger, "over parse(query_str:%s nsegs:%d nqterms:%d)", query_str, ibase->nqsegmentors, nqterms);
+            DEBUG_LOGGER(ibase->logger, "over parse(query_str:%s nsegs:%d nqterms:%d)", query_str, ibase->nqsegmentors, nqterms);
         }
+        ACCESS_LOGGER(ibase->logger, "over parse(qid:%d query_str:%s nqterms:%d dtotal:%lld ttotal:%lld)", query->qid, query_str, nqterms, (long long)ibase->state->dtotal, (long long)ibase->state->ttotal);
         if(nqterms > 0)
         {
             N = ibase->state->dtotal;
-            ACCESS_LOGGER(ibase->logger, "starting state-idf(query_str:%s nqterms:%d dtotal:%lld ttotal:%lld nsegs:%d)", query_str, nqterms, (long long)N, (long long)ibase->state->ttotal, ibase->nqsegmentors);
+            DEBUG_LOGGER(ibase->logger, "starting state-idf(query_str:%s nqterms:%d dtotal:%lld ttotal:%lld nsegs:%d)", query_str, nqterms, (long long)N, (long long)ibase->state->ttotal, ibase->nqsegmentors);
             query->ravgdl = 1.0;
             if(ibase->state->ttotal != 0)
                 query->ravgdl = (double)ibase->state->dtotal/(double)ibase->state->ttotal;
@@ -1133,18 +1131,20 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
             if(nqterms > IB_QUERY_MAX) nqterms = IB_QUERY_MAX;
             //MUTEX_LOCK(ibase->mutex_termstate);
             i = 0, x = 0;
+			query->nvqterms = 0;
             for(i = 0; i < nqterms; ++i)
             {
                 z = list[i];
                 termid = query->qterms[i].id  = qterms[z].id;
                 query->qterms[i].size = qterms[z].size;
+                query->qterms[i].flag = qterms[z].flag;
                 query->qterms[i].bitnot = qterms[z].bitnot;
                 query->qterms[i].bithit = qterms[z].bithit;
                 //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
                 if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
                 {
                     query->qterms[i].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
-                    ACCESS_LOGGER(ibase->logger, "terms[%d] n:%lld N:%lld idf:%f", termid, (long long)n, (long long)N, query->qterms[i].idf);
+                    DEBUG_LOGGER(ibase->logger, "terms[%d] n:%lld N:%lld idf:%f bithit:%d bitnot:%d", termid, (long long)n, (long long)N, query->qterms[i].idf,query->qterms[i].bithit,query->qterms[i].bitnot);
                     if(query->qterms[i].idf < 0) query->qterms[i].idf = 1.0f;
                     if(termstates[termid].status == IB_BTERM_BLOCK)
                     {
@@ -1158,7 +1158,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                     }
                     else
                     {
-                        if(!(qterms[z].flag & QTERM_BIT_NOT)) query->nvqterms++;
+                        if(!(qterms[z].flag & QTERM_BIT_NOT))
+						{
+							query->nvqterms++;
+                            DEBUG_LOGGER(ibase->logger, "terms[%d] z:%d flag:%d query->nvqterms:%d", termid, z, qterms[z].flag,query->nvqterms);
+						}
                     }
                 }
                 if(qterms[z].flag & QTERM_BIT_AND) query->operators.bitsand |= 1 << i;
@@ -1185,7 +1189,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
             query->nqterms = nqterms;
             //if(nxqterms > query->nqterms)
             //query->nquerys = query->nqterms;
-            ACCESS_LOGGER(ibase->logger, "over state-idf(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
+            DEBUG_LOGGER(ibase->logger, "over state-idf(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         }
         query->nquerys = query->nqterms + nxqterms;
         return query->nqterms;
@@ -1376,7 +1380,7 @@ int ibase_set_rank(IBASE *ibase, int64_t globalid, double rank)
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
             {
                 iheader->rank = rank;
-                ACCESS_LOGGER(ibase->logger, "set_rank(%f) to docid[%d/%d]", rank, globalid, localid);
+                DEBUG_LOGGER(ibase->logger, "set_rank(%f) to docid[%d/%d]", rank, globalid, localid);
             }
             ret = 0;
         }
@@ -1402,7 +1406,7 @@ int ibase_set_category(IBASE *ibase, int64_t globalid, int64_t category)
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
             {
                 iheader->category = category;
-                ACCESS_LOGGER(ibase->logger, "set_category(%lld) to docid[%d/%d]", IBLL(category), globalid, localid);
+                DEBUG_LOGGER(ibase->logger, "set_category(%lld) to docid[%d/%d]", IBLL(category), globalid, localid);
             }
             ret = 0;
         }
@@ -1428,7 +1432,7 @@ int ibase_set_slevel(IBASE *ibase, int64_t globalid, int slevel)
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
             {
                 iheader->slevel = slevel;
-                ACCESS_LOGGER(ibase->logger, "set_slevel(%d) to docid[%lld/%d]", slevel, IBLL(globalid), localid);
+                DEBUG_LOGGER(ibase->logger, "set_slevel(%d) to docid[%lld/%d]", slevel, IBLL(globalid), localid);
             }
             ret = 0;
         }

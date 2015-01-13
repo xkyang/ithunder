@@ -420,6 +420,8 @@
                         }
                     }
                     xmlHttp.send();
+					infilter = "";
+					rangefilter = "";
                 }else alert("请输入关键词");
             }
             function makeInRange()
@@ -449,6 +451,7 @@
                        }
                        rangefilter += "];";
                     }
+					alert("请继续添加或执行查找");
                 }
             }
             //so
@@ -472,8 +475,9 @@
                 var datetime = null;
                 var datefrom = 0;
                 var dateto = 0;
-                if(form && (query = form['query'].value) != "")
-                {
+                if(form)
+                { 
+					query = form['query'].value;
                     if(page <= 0) page_num = 1;
                     from = (page_num - 1) * 15;
                     hideresult();
@@ -607,8 +611,7 @@
                     if(window.location.href.indexOf('displayuri=1') >= 0)alert(uri);
                     document.forms['sodo_search']['argv'].value = uri;
                     sodo(uri, page_num);
-                }else 
-                    alert("请输入关键词");
+                }
             }
             //close form
             function CloseThis(element)
@@ -723,7 +726,7 @@
                 var xmlHttp = null;
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
-                    var uri = window.location.pathname + "qstate?rand="+Math.random();
+                    var uri = window.location.pathname + "/qstate?rand="+Math.random();
                     xmlHttp.open('GET', uri, true);
                     xmlHttp.onreadystatechange=function()
                     {
@@ -936,7 +939,7 @@
                 var xmlHttp = null;
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
-                    var uri = window.location.pathname + "tstate?rand="+Math.random();
+                    var uri = window.location.pathname + "/tstate?rand="+Math.random();
                     xmlHttp.open('GET', uri, true);
                     xmlHttp.onreadystatechange=function()
                     {

@@ -98,31 +98,31 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
     xnodes = xmap->xnodes;
     if(xmap->count == 0)
     {
-        //ACCESS_LOGGER(ibase->logger, "docid:%d count:%d", pxnode->docid, xmap->count);
+        DEBUG_LOGGER(ibase->logger, "docid:%d count:%d", pxnode->docid, xmap->count);
         xmap->min = xmap->max = 0;
         xnodes[0] = pxnode;
         xmap->count++;
     }
     else if(xmap->min <= xmap->max)
     {
-        //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+        DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
         _x_ = xmap->min;
         _to_ = xmap->max;
         if(pxnode->docid == xnodes[_x_]->docid)
         {
-            //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+            DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             _i_ = _x_;
             old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
         }
         else if(pxnode->docid == xnodes[_to_]->docid)
         {
-            //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+            DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             _i_ = _to_;
             old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
         }
         else if(pxnode->docid > xnodes[_to_]->docid)
         {
-            //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+            DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             if((xmap->max + 1) == IB_XNODE_MAX)
             {
                 _i_ = xmap->min = 0;
@@ -139,7 +139,7 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
         }
         else if(pxnode->docid < xnodes[_x_]->docid)
         {
-            //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+            DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             if(_x_ > 0)
             {
                 _i_ = --(xmap->min);
@@ -159,7 +159,7 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
         }
         else
         {
-            //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+            DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             _i_ = -1;
             _x_ = xmap->min;
             _to_ = xmap->max;
@@ -176,14 +176,14 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
 
                 if(xnodes[_i_]->docid == pxnode->docid)
                 {
-                    //ACCESS_LOGGER(ibase->logger, "docid:%d xnode[%d] => [%p] min:%d[%d] max:%d[%d] count:%d", pxnode->docid, _i_, xnodes[_i_], xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                    DEBUG_LOGGER(ibase->logger, "docid:%d xnode[%d] => [%p] min:%d[%d] max:%d[%d] count:%d", pxnode->docid, _i_, xnodes[_i_], xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                     old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
                 }
                 else
                 {
                     if(xmap->max < (IB_XNODE_MAX-1) || xmap->min == 0)
                     {
-                        //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                        DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                         _i_ = (xmap->max)++;
                         while(_i_ > 0 && pxnode->docid < xnodes[_i_]->docid)
                         {
@@ -191,11 +191,11 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
                             --_i_;
                         }
                         xnodes[_i_+1] = pxnode;
-                        //ACCESS_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_+1, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                        DEBUG_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_+1, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                     }
                     else
                     {
-                    //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                    DEBUG_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                         if(xmap->max == (IB_XNODE_MAX-1))
                         {
                             _to_ = xmap->max;
@@ -208,7 +208,7 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
                                 ++_x_;
                             }
                             xnodes[_i_] = pxnode;
-                            //ACCESS_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                            DEBUG_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                             while(_x_ <= _to_) xnodes[++_i_] = xnodes[_x_++];
                             xmap->max = _i_;
                         }
@@ -222,7 +222,7 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
                                 ++_i_;
                             }
                             xnodes[_i_-1] = pxnode;
-                            //ACCESS_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_-1, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
+                            DEBUG_LOGGER(ibase->logger, "i:%d docid:%d min:%d[%d] max:%d[%d] count:%d", _i_-1, pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
                         }
                     }
                     xmap->count++;
@@ -289,7 +289,7 @@ void ibase_unindex(IBASE *ibase, IHEADER *headers, ITERM *itermlist, XMAP *_xmap
             itermlist[_x_].prevnext_size = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
         }
-        DEBUG_LOGGER(ibase->logger, "termid:%d docid:%d globalid:%lld status:%d crc:%d", itermlist[_x_].termid, itermlist[_x_].docid,  headers[(itermlist[_x_].docid)].globalid, headers[(itermlist[_x_].docid)].status, headers[(itermlist[_x_].docid)].crc);
+        DEBUG_LOGGER(ibase->logger, "termid:%d docid:%d globalid:%lld status:%d crc:%d fields:%d bithit:%d bitnot:%d", itermlist[_x_].termid, itermlist[_x_].docid,  headers[(itermlist[_x_].docid)].globalid, headers[(itermlist[_x_].docid)].status, headers[(itermlist[_x_].docid)].crc,itermlist[_x_].fields,itermlist[_x_].bithit,itermlist[_x_].bitnot);
         if(itermlist[_x_].prevnext_size > 0)
         {
             itermlist[_x_].sprevnext = itermlist[_x_].p;
@@ -371,7 +371,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         }
         else
         {
-            //ACCESS_LOGGER(ibase->logger, "pop chunk failed, %s", strerror(errno));
+            DEBUG_LOGGER(ibase->logger, "pop chunk failed, %s", strerror(errno));
             goto end;
         }
         xmap = ibase_pop_xmap(ibase);
@@ -456,7 +456,10 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             itermlist[i].termid = query->qterms[i].id;
             itermlist[i].bithit = query->qterms[i].bithit;
             itermlist[i].bitnot = query->qterms[i].bitnot;
-            bithit |= 1 << i;
+			if(query->qterms[i].bithit)
+			{
+               bithit |= 1 << i;
+			}
             if((query->qterms[i].flag & QTERM_BIT_DOWN) && query->qweight) 
             {
                 itermlist[i].weight = 0;
@@ -524,13 +527,13 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {
-                //WARN_LOGGER(ibase->logger, "docid:%d bitnot:%d", docid, xnode->bitnot);
+                DEBUG_LOGGER(ibase->logger, "docid:%d xnode->bitnot:%d xnode->bithit:%d bithit:%d", docid, xnode->bitnot,xnode->bithit,bithit);
                 if(xnode->bitnot) goto next;
                 if(xnode->bithit != bithit) goto next;
             }
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
-            if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
+            if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             /* in/range filter */
             if(query->int_inset_count > 0)
             {
@@ -753,7 +756,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                         no = nx >> 1;
                         if(nx & 0x01) next = no;
                         else prev = no;
-                        //ACCESS_LOGGER(ibase->logger, "i:%d/%d docid:%d/%lld self:%d prev:%d next:%d no:%d nx:%d xmin:%d xmax:%d nn:%d mm:%d", i, mm, docid, IBLL(headers[docid].globalid), itermlist[x].no, prev, next, no, nx, xnode->xmin, xnode->xmax, nn, mm);
+                        DEBUG_LOGGER(ibase->logger, "i:%d/%d docid:%d/%lld self:%d prev:%d next:%d no:%d nx:%d xmin:%d xmax:%d nn:%d mm:%d", i, mm, docid, IBLL(headers[docid].globalid), itermlist[x].no, prev, next, no, nx, xnode->xmin, xnode->xmax, nn, mm);
                         if(no < xnode->xmin)continue;
                         if(no > xnode->xmax)break;
                         if(no != xno)
@@ -771,19 +774,19 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                                 else max = z;
                             }while(max > min);
                         }
-                        //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld next:%d next:%d no:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, next, no, x, kk);
+                        DEBUG_LOGGER(ibase->logger, "docid:%d/%lld next:%d next:%d no:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, next, no, x, kk);
                         if(k >= 0 && no == xnode->bitphrase[k] && !(query->qterms[x].flag & QTERM_BIT_DOWN)) 
                         {
                             kk = xnode->bitquery[k];
                             prevnext = 0;
                             if(prev >= 0 && (query->qterms[x].prev & (1 << kk)))
                             {
-                                //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld phrase_prev:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, x, kk);
+                                DEBUG_LOGGER(ibase->logger, "docid:%d/%lld phrase_prev:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, x, kk);
                                 prevnext += 2;
                             }
                             else if(next >= 0 && (query->qterms[x].next & (1 << kk)))
                             {
-                                //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld phrase_next:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), next, x, kk);
+                                DEBUG_LOGGER(ibase->logger, "docid:%d/%lld phrase_next:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), next, x, kk);
                                 prevnext += 2;
                             }
                             if(prevnext)
