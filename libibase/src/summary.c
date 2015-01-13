@@ -458,7 +458,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     }
                     else
                     {
-                        //ACCESS_LOGGER(ibase->logger, "No uncompress data %u to %d", nzdata, docheader->content_size);
+                        DEBUG_LOGGER(ibase->logger, "No uncompress data %u to %d", nzdata, docheader->content_size);
                         content = zdata;
                     }
                     content[docheader->content_size] = '\0';
@@ -475,7 +475,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     p_time += PT_LU_USEC(timer);
                     for(j = 0; j < docheader->nterms; j++)
                     {
-                        //ACCESS_LOGGER(ibase->logger, "j:%d termid:%d", j, termlist[j].termid);
+                        DEBUG_LOGGER(ibase->logger, "j:%d termid:%d", j, termlist[j].termid);
                         if(MTREE64_GET(hitsmap, termlist[j].termid, pdata) == 0)
                         {
                             x = (int)data;
@@ -508,7 +508,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
             ret = p - summary;
         }
         TIMER_SAMPLE(timer);
-        ACCESS_LOGGER(ibase->logger, "read_summary(qid:%d count:%d, id_time:%d io_time:%d p_time:%d map_time:%d sum_time:%d) time used:%lld", res->qid, qset->count, id_time, io_time, p_time, map_time, sum_time, PT_USEC_U(timer));
+        DEBUG_LOGGER(ibase->logger, "read_summary(qid:%d count:%d, id_time:%d io_time:%d p_time:%d map_time:%d sum_time:%d) time used:%lld", res->qid, qset->count, id_time, io_time, p_time, map_time, sum_time, PT_USEC_U(timer));
 end:
         if(block){ibase_push_block(ibase, block);}
         if(zblock){ibase_push_block(ibase, zblock);}

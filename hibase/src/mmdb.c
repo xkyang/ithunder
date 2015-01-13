@@ -485,7 +485,7 @@ void *mmdb_pop_stree(MMDB *mmdb)
         {
             stree = mtree64_init();
             mmdb->stree_total++;
-            //ACCESS_LOGGER(mmdb->logger, "qres_total:%d stree_total:%d", mmdb->qres_total, mmdb->stree_total);
+            DEBUG_LOGGER(mmdb->logger, "qres_total:%d stree_total:%d", mmdb->qres_total, mmdb->stree_total);
         }
         MUTEX_UNLOCK(mmdb->mutex_stree);
     }
@@ -536,7 +536,7 @@ void *mmdb_pop_qres(MMDB *mmdb)
             if((qres = xmm_mnew(sizeof(QRES))))
                 mmdb->qres_total++;
             memset(qres, 0, sizeof(QRES));
-            //ACCESS_LOGGER(mmdb->logger, "qres_total:%d stree_total:%d", mmdb->qres_total, mmdb->stree_total);
+            DEBUG_LOGGER(mmdb->logger, "qres_total:%d stree_total:%d", mmdb->qres_total, mmdb->stree_total);
         }
         MUTEX_UNLOCK(mmdb->mutex_qres);
     }
@@ -822,7 +822,7 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
     if(mmdb && qid > 0 && (qtasks = (QTASK *)(mmdb->qtaskio.map)) 
             && (map = qtasks[qid].map) && cqres)
     {
-        ACCESS_LOGGER(mmdb->logger, "over_query(%d/%d) pid:%d/%d cqres:%p qset:%p recs:%p nrecs:%p total:%d", qid, mmdb->state->qid_max, pid, mmdb->state->pid_max, cqres, qset, recs, nrecs, MTREE64_TOTAL(map));
+        DEBUG_LOGGER(mmdb->logger, "over_query(%d/%d) pid:%d/%d cqres:%p qset:%p recs:%p nrecs:%p total:%d", qid, mmdb->state->qid_max, pid, mmdb->state->pid_max, cqres, qset, recs, nrecs, MTREE64_TOTAL(map));
         //save records
         i = 0;
         while(MTREE64_TOTAL(map) > 0)
@@ -1003,7 +1003,7 @@ int mmdb_merge(MMDB *mmdb, int qid, int nodeid, IRES *res, IRECORD *records,
             }
             if(qres && qres->ntasks > 0 && qres->nerrors > 0) 
             {
-                //WARN_LOGGER(mmdb->logger, "qid:%d nodeid:%d ntasks:%d errors:%d doctotal:%d", qid, nodeid, qres->ntasks, qres->nerrors, res->doctotal);
+                WARN_LOGGER(mmdb->logger, "qid:%d nodeid:%d ntasks:%d errors:%d doctotal:%d", qid, nodeid, qres->ntasks, qres->nerrors, res->doctotal);
                 *error = qres->nerrors;
             }
             if(--(qtasks[qid].left) == 0) 
@@ -1013,7 +1013,7 @@ int mmdb_merge(MMDB *mmdb, int qid, int nodeid, IRES *res, IRECORD *records,
                 memcpy(&(cqres->qset), &(qres->qset), sizeof(IQSET));
                 mmdb_over_merge(mmdb, qid, pid, cqres, qset, recs, nrecs, qres->nerrors);
             }
-            //ACCESS_LOGGER(mmdb->logger, "qid:%d left:%d", qid, qtasks[qid].left);
+            DEBUG_LOGGER(mmdb->logger, "qid:%d left:%d", qid, qtasks[qid].left);
             ret = qtasks[qid].left;
         }
         mmdb_qmutex_unlock(mmdb, qid);
@@ -1065,13 +1065,13 @@ int mmdb_get_cqres(MMDB *mmdb, int pid, IQSET *qset, IRECORD *records)
     if(mmdb && pid > 0 && pid <= mmdb->state->pid_max && qset && records)
     {
         mmdb_pmutex_lock(mmdb, pid);
-        //ACCESS_LOGGER(mmdb->logger, "get_qres() pid:%d", pid);
+        DEBUG_LOGGER(mmdb->logger, "get_qres() pid:%d", pid);
         if((qtasks = (QTASK *)mmdb->qtaskio.map) && (qpages = (QPAGE *)mmdb->qpageio.map) 
                 && qpages[pid].count > 0 && (qid =  qpages[pid].qid) > 0 
                 && qtasks[qid].recid > 0)
         {
             //&& (qpages[pid].mod_time != qtasks[qid].mod_time) /* check is update */
-            //ACCESS_LOGGER(mmdb->logger, "get_qres() qid:%d pid:%d recid:%d", qid, pid, qtasks[qid].recid);
+            DEBUG_LOGGER(mmdb->logger, "get_qres() qid:%d pid:%d recid:%d", qid, pid, qtasks[qid].recid);
             mmdb_qmutex_lock(mmdb, qid);
             /* check/read page N records */
             if(db_get_data_len(PDB(mmdb->rdb), qtasks[qid].recid) > 0)
@@ -1086,18 +1086,18 @@ int mmdb_get_cqres(MMDB *mmdb, int pid, IQSET *qset, IRECORD *records)
             else 
                 qtasks[qid].recid = 0;
             mmdb_qmutex_unlock(mmdb, qid);
-            //ACCESS_LOGGER(mmdb->logger, "get_qres() qid:%d pid:%d recid:%d from:%d to:%d n:%d", qid, pid, qtasks[qid].recid, i, to);
+            DEBUG_LOGGER(mmdb->logger, "get_qres() qid:%d pid:%d recid:%d from:%d to:%d n:%d", qid, pid, qtasks[qid].recid, i, to);
         }
         mmdb_pmutex_unlock(mmdb, pid);
         if(recid > 0 && (db_read_data(PDB(mmdb->rdb), recid, (char *)&cqres)) > 0)
         {
             memcpy(qset, &(cqres.qset), sizeof(IQSET));
             if(to > qset->res.count) n = qset->res.count - i;
-            //ACCESS_LOGGER(mmdb->logger, "qid:%d pid:%d recid:%d n:%d from:%d to:%d count:%d", qid, pid, qtasks[qid].recid, n, i, to, qset->res.count);
+            DEBUG_LOGGER(mmdb->logger, "qid:%d pid:%d recid:%d n:%d from:%d to:%d count:%d", qid, pid, qtasks[qid].recid, n, i, to, qset->res.count);
             if((qset->count = n) > 0)
             {
                 memcpy(records, &(cqres.records[i]), sizeof(IRECORD) * n);
-                //ACCESS_LOGGER(mmdb->logger, "qid:%d pid:%d recid:%d n:%d from:%d to:%d", qid, pid, qtasks[qid].recid, n, i, to);
+                DEBUG_LOGGER(mmdb->logger, "qid:%d pid:%d recid:%d n:%d from:%d to:%d", qid, pid, qtasks[qid].recid, n, i, to);
             }
         }
     }

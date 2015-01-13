@@ -40,7 +40,7 @@ int ibase_get_cache(IBASE *ibase, IQUERY *query, ICHUNK *chunk)
             if(ret != -1)
             {
                 ibase->state->nhits_cache++;
-                ACCESS_LOGGER(ibase->logger, "Hit cache[%d/%d] qid:%d count:%d total:%d io:%d sort:%d ncatgroups:%d res->qid:%d", ibase->state->nhits_cache, ibase->state->nquerys_cache, query->qid, chunk->res.count, chunk->res.total, chunk->res.io_time, chunk->res.sort_time, chunk->res.ncatgroups, chunk->res.qid);
+                DEBUG_LOGGER(ibase->logger, "Hit cache[%d/%d] qid:%d count:%d total:%d io:%d sort:%d ncatgroups:%d res->qid:%d", ibase->state->nhits_cache, ibase->state->nquerys_cache, query->qid, chunk->res.count, chunk->res.total, chunk->res.io_time, chunk->res.sort_time, chunk->res.ncatgroups, chunk->res.qid);
             }
         }
     }
@@ -72,7 +72,7 @@ int ibase_set_cache(IBASE *ibase, IQUERY *query, ICHUNK *chunk)
         chunk->mod_time = time(NULL);
         n = sprintf(line, "q:%d", query->qid);
         id = db_xset_data(PDB(ibase->cdb), line, n, (char *)chunk, sizeof(ICHUNK));
-        ACCESS_LOGGER(ibase->logger, "Update cache[%d] size:%d qid:%d count:%d total:%d io:%d sort:%d ncatgroups:%d", id, (int)sizeof(ICHUNK), query->qid, chunk->res.count, chunk->res.total, chunk->res.io_time, chunk->res.sort_time, chunk->res.ncatgroups);
+        DEBUG_LOGGER(ibase->logger, "Update cache[%d] size:%d qid:%d count:%d total:%d io:%d sort:%d ncatgroups:%d", id, (int)sizeof(ICHUNK), query->qid, chunk->res.count, chunk->res.total, chunk->res.io_time, chunk->res.sort_time, chunk->res.ncatgroups);
     }
     return id;
 }

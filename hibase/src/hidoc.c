@@ -1131,7 +1131,7 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
                 && (mid = hidoc_mid(hidoc, docheader->globalid)) > 0)
         {
             if(mid >= hidoc->state->xindextotal){hidoc->state->xindextotal = mid+1;newid = mid;}
-            ACCESS_LOGGER(hidoc->logger, "globalid:%lld id:%d total:%d", docheader->globalid, mid, hidoc->state->xindextotal);
+            DEBUG_LOGGER(hidoc->logger, "globalid:%lld id:%d total:%d", docheader->globalid, mid, hidoc->state->xindextotal);
             CHECK_XINDEXIO(hidoc);
             //CHECK_XINTIO(hidoc);
             //CHECK_XLONGIO(hidoc);
@@ -1158,11 +1158,11 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
             }
             if(xindexs[mid].status < 0)
             {
-                ACCESS_LOGGER(hidoc->logger, "update-index{gloablid:%lld mid:%d rank:%f status:%d}", LL64(docheader->globalid), mid, xindexs[mid].rank, docheader->status);
+                DEBUG_LOGGER(hidoc->logger, "update-index{gloablid:%lld mid:%d rank:%f status:%d}", LL64(docheader->globalid), mid, xindexs[mid].rank, docheader->status);
             }
             else
             {
-                ACCESS_LOGGER(hidoc->logger, "update-index{gloablid:%lld mid:%d rank:%f}", LL64(docheader->globalid), mid, xindexs[mid].rank);
+                DEBUG_LOGGER(hidoc->logger, "update-index{gloablid:%lld mid:%d rank:%f}", LL64(docheader->globalid), mid, xindexs[mid].rank);
             }
             if(flag & IB_CATBIT_SET)
             {
@@ -1347,11 +1347,11 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                         px = (int *)p;
                         p += sizeof(int);
                         docheader = (DOCHEADER *)p;
-                        ACCESS_LOGGER(hidoc->logger, "id:%d globalid:%lld", id, xindexs[id].globalid);
+                        DEBUG_LOGGER(hidoc->logger, "id:%d globalid:%lld", id, xindexs[id].globalid);
                         if((n = db_read_data(PDB(hidoc->db), id, p)) > sizeof(DOCHEADER) 
                                 && docheader->globalid == xindexs[id].globalid)
                         {
-                            ACCESS_LOGGER(hidoc->logger, "globalid:%lld/%lld mid:%d total:%d size:%d", LL(docheader->globalid), LL(xindexs[id].globalid), id, hidoc->state->xindextotal, docheader->size);
+                            DEBUG_LOGGER(hidoc->logger, "globalid:%lld/%lld mid:%d total:%d size:%d", LL(docheader->globalid), LL(xindexs[id].globalid), id, hidoc->state->xindextotal, docheader->size);
                             if(docheader->size < 0 || docheader->size != n) 
                             {
                                 FATAL_LOGGER(hidoc->logger, "Invalid data id:%d size:%d n:%d", id, docheader->size, n);
@@ -2231,7 +2231,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
         {
             docheader->intblock_off = p - (char *)block->data;
             pp = p;
-            ACCESS_LOGGER(hidoc->logger, "global:%lld int index from:%d num:%d", LL64(docheader->globalid), index_int_from, index_int_num);
+            DEBUG_LOGGER(hidoc->logger, "global:%lld int index from:%d num:%d", LL64(docheader->globalid), index_int_from, index_int_num);
             np = (int *)p;
             i = index_int_from;
             to = i + index_int_num;
@@ -2251,7 +2251,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
         {
             docheader->longblock_off = p - (char *)block->data;
             pp = p;
-            ACCESS_LOGGER(hidoc->logger, "global:%lld long index from:%d num:%d", LL64(docheader->globalid), index_long_from, index_long_num);
+            DEBUG_LOGGER(hidoc->logger, "global:%lld long index from:%d num:%d", LL64(docheader->globalid), index_long_from, index_long_num);
             npl = (int64_t *)p;
             i = index_long_from;
             to = i + index_long_num;
@@ -2271,7 +2271,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
         {
             docheader->doubleblock_off = p - (char *)block->data;
             pp = p;
-            ACCESS_LOGGER(hidoc->logger, "global:%lld double index from:%d num:%d", LL64(docheader->globalid), index_double_from, index_double_num);
+            DEBUG_LOGGER(hidoc->logger, "global:%lld double index from:%d num:%d", LL64(docheader->globalid), index_double_from, index_double_num);
             npf = (double *)p;
             i = index_double_from;
             to = i + index_double_num;
@@ -2337,12 +2337,12 @@ int hidoc_parse_document(HIDOC *hidoc, int no, HINDEX *hindex)
                 if(fheader.flag & IB_RANK_SET)
                 {
                     ret = hidoc__set__rank(hidoc, (int64_t)fheader.globalid, fheader.rank);
-                    ACCESS_LOGGER(hidoc->logger, "set_rank(%lld, %f) -> %d", LL64(fheader.globalid), fheader.rank, ret);
+                    DEBUG_LOGGER(hidoc->logger, "set_rank(%lld, %f) -> %d", LL64(fheader.globalid), fheader.rank, ret);
                 }
                 if(fheader.flag & (IB_CATBIT_SET|IB_CATBIT_UNSET))
                 {
                     ret = hidoc__set__category(hidoc, (int64_t)fheader.globalid, fheader.flag, fheader.category);
-                    ACCESS_LOGGER(hidoc->logger, "set_category(%lld, %lld) -> %d", LL64(fheader.globalid), LL64(fheader.category), ret);
+                    DEBUG_LOGGER(hidoc->logger, "set_category(%lld, %lld) -> %d", LL64(fheader.globalid), LL64(fheader.category), ret);
                 }
                 ret = 0;
             }
@@ -2407,7 +2407,7 @@ end:
                 xint = (int *)data;
                 if((ret = hidoc_set_all_int_fields(hidoc,  fheader.globalid, xint)) > 0)
                     hidoc__set__header(hidoc, ret, &fheader);
-                ACCESS_LOGGER(hidoc->logger, "set_int(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
+                DEBUG_LOGGER(hidoc->logger, "set_int(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
                 ret = 0;
             }
             else if((fheader.flag & IB_LONG_SET) &&  fheader.size == sizeof(int64_t) * hidoc->state->long_index_count)
@@ -2415,7 +2415,7 @@ end:
                 xlong = (int64_t *)data;
                 if((ret = hidoc_set_all_long_fields(hidoc, fheader.globalid, xlong)) > 0)
                     hidoc__set__header(hidoc, ret, &fheader);
-                ACCESS_LOGGER(hidoc->logger, "set_long(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
+                DEBUG_LOGGER(hidoc->logger, "set_long(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
                 ret = 0;
             }
             else if((fheader.flag & IB_DOUBLE_SET) &&  fheader.size == sizeof(double) * hidoc->state->double_index_count)
@@ -2423,7 +2423,7 @@ end:
                 xdouble = (double *)data;
                 if((ret = hidoc_set_all_double_fields(hidoc, fheader.globalid, xdouble)) > 0)
                     hidoc__set__header(hidoc, ret, &fheader);
-                ACCESS_LOGGER(hidoc->logger, "set_double(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
+                DEBUG_LOGGER(hidoc->logger, "set_double(%lld/%lld/%f) -> %d", LL64(fheader.globalid), LL64(fheader.category), fheader.rank, ret);
                 ret = 0;
             }
             else
