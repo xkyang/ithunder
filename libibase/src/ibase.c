@@ -985,7 +985,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         last_no = x;
                                     }
                                 }
-                                DEBUG_LOGGER(ibase->logger, "found term-sync-id:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
+                                DEBUG_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {
@@ -1101,7 +1101,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         qterms[x].flag |= QTERM_BIT_NOT;
                                     }
                                 }
-                                DEBUG_LOGGER(ibase->logger, "found term-sync-id:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
+                                DEBUG_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
                             }
                             else if((termid = mmtrie_xadd((MMTRIE *)(ibase->xmmtrie), line, nterm)) > 0)
                             {

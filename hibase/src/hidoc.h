@@ -51,6 +51,8 @@ static char *server_type_list[] = {"DocNode", "ParserNode", "IndexNode"};
 #define  HI_XLONG_MAX           1024
 #define  HI_SEGMENTORS_MIN      32
 #define  HI_SEGMENTORS_MAX      1024
+#define  HI_DELSTATUS_LOGIC     0x00
+#define  HI_DELSTATUS_PHYSICS   0x01
 /* sync data task */
 typedef struct _HITASK
 {
@@ -102,7 +104,7 @@ typedef struct _HISTATE
     off_t bterm_mod_time;
     off_t synterm_mod_time;
     int16_t   ccompress_status;
-    int16_t  phrase_status;
+    int16_t   phrase_status;
     int   ntasks;
     int   taskqid;
     int   need_update_numbric;
@@ -121,7 +123,9 @@ typedef struct _HISTATE
     int   double_index_count;
     int   bterm_id_max;
     int   synterm_id_max;
-    uint32_t   stime;
+	int16_t   del_status;
+	int16_t	  bits;
+    uint32_t  stime;
     HINODE nodes[HI_NODE_MAX];
     HIDUMP dumps[HI_DUMP_MAX];
 }HISTATE;
@@ -253,6 +257,7 @@ typedef struct _HIDOC
     int (*set_double_index)(struct _HIDOC *, int double_index_from, int double_index_count);
     int (*set_phrase_status)(struct _HIDOC *, int status);
     int (*set_ccompress_status)(struct _HIDOC *, int status);
+    int (*set_del_status)(struct _HIDOC *, int status);
     int (*set_dict)(struct _HIDOC *, char *dictfile, char *charset, char *rules, int mode);
     //int (*set_forbidden_dict)(struct _HIDOC *, char *dictfile);
     int (*resume)(struct _HIDOC *);

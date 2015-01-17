@@ -1040,7 +1040,7 @@ int hidoc_read_bterms(HIDOC *hidoc, int taskid, char *data, int ndata)
                     n = bsterms[i].bterm.len + sizeof(BTERM);
                     if(left < n)
                     {
-                        WARN_LOGGER(hidoc->logger, "No space left bsterms[%d] taskid:%d", i, taskid);
+                        WARN_LOGGER(hidoc->logger, "NoSpace bsterms[%d] taskid:%d", i, taskid);
                         goto err;
                     }
                     else
@@ -1237,7 +1237,7 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
 int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
 {
     int id = -1, nodeid = 0, x = 0, k = 0, *px = NULL, 
-        left = 0, last = 0, n = 0;//, *int_index = 0, z = 0;
+        left = 0, last = 0, n = 0, /* *int_index = 0, */z = 0;
     DOCHEADER *docheader = NULL;
     //int64_t *long_index = NULL;
     //double *double_index = NULL;
@@ -1342,7 +1342,21 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                         FATAL_LOGGER(hidoc->logger, "Invalid xindex[%d].nodeid[%d] to task[%s:%d].nodeid:%d", id, xindexs[id].nodeid, tasks[k].ip, tasks[k].port, nodeid);
                         _exit(-1);
                     }
-                    if((n = db_get_data_len(PDB(hidoc->db), id)) <= (left - HI_LEFT_LEN))
+                    n = db_get_data_len(PDB(hidoc->db), id);
+                    if((n == 0) && (xindexs[id].status < 0))
+					{
+					   if(hidoc->state->del_status == HI_DELSTATUS_PHYSICS)
+					   {
+						  ++z;
+					      continue;
+					   }
+					   else
+					   {
+                          FATAL_LOGGER(hidoc->logger, "Invalid data id:%lld globalid:%lld in db", id, LL64(xindexs[id].globalid));
+                          break;
+					   }
+					}
+                    if(n <= (left - HI_LEFT_LEN))
                     {
                         px = (int *)p;
                         p += sizeof(int);
@@ -1361,6 +1375,10 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                             docheader->slevel = xindexs[id].slevel;
                             docheader->category = xindexs[id].category;
                             docheader->rank = xindexs[id].rank;
+					        if((xindexs[id].status < 0) && (hidoc->state->del_status == HI_DELSTATUS_PHYSICS))
+							{
+							   db_del_data(PDB(hidoc->db), id);
+							}
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
@@ -1420,6 +1438,7 @@ end:
                 id = tasks[k].popid = last ;
             }
             else id = -1;
+			tasks[k].count += z; //add the deleted document number
         }
         else id = -2;
         MUTEX_UNLOCK(hidoc->mutex);
@@ -2913,7 +2932,25 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                             tasks[k].mmqid = 0;tasks[k].nqueue = 0;
                             break;
                         }
-                        if(db_get_data_len(PDB(hidoc->db), mid) > (left-HI_LEFT_LEN)) break;
+                        n = db_get_data_len(PDB(hidoc->db), mid);
+                        if((n == 0) && (xindexs[mid].status < 0))
+					    {
+					       if(hidoc->state->del_status == HI_DELSTATUS_PHYSICS)
+					       {
+                              mmqueue_pop(MMQ(hidoc->mmqueue),tasks[k].mmqid, &mid);
+                              tasks[k].nqueue--;
+                              id = mmqueue_head(MMQ(hidoc->mmqueue), tasks[k].mmqid, &mid);
+					          continue;
+					       }
+					       else
+					       {
+                              FATAL_LOGGER(hidoc->logger, "Invalid data id:%lld globalid:%lld in db", mid, LL64(xindexs[mid].globalid));
+                              mid = -1;
+                              _exit(-1);
+                              break;
+					       }
+					    }
+                        if(n > (left-HI_LEFT_LEN)) break;
                         tasks[k].upid = mid;
                         px = (int *)p;
                         p += sizeof(int);
@@ -2926,6 +2963,10 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                             docheader->slevel = xindexs[mid].slevel;
                             docheader->category = xindexs[mid].category;
                             docheader->rank = xindexs[mid].rank;
+					        if((xindexs[mid].status < 0) && (hidoc->state->del_status == HI_DELSTATUS_PHYSICS))
+							{
+							   db_del_data(PDB(hidoc->db), mid);
+							}
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
@@ -3493,6 +3534,7 @@ HIDOC *hidoc_init()
         //hidoc->set_forbidden_dict       = hidoc_set_forbidden_dict;
         hidoc->set_ccompress_status     = hidoc_set_ccompress_status;
         hidoc->set_phrase_status        = hidoc_set_phrase_status;
+        hidoc->set_del_status           = hidoc_set_del_status;
         hidoc->genindex                 = hidoc_genindex;
         hidoc->set_dump                 = hidoc_set_dump;
         hidoc->get_dumpinfo             = hidoc_get_dumpinfo;

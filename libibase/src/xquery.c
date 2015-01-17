@@ -267,7 +267,7 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
             /* catetory block filter */
             if(query->catblock_filter != 0 && (query->catblock_filter & headers[docid].category)) 
             {
-                WARN_LOGGER(ibase->logger, "catblock_filter:%lld category:%lld", IBLL(query->catblock_filter), IBLL(headers[docid].category));
+                DEBUG_LOGGER(ibase->logger, "catblock_filter:%lld category:%lld", IBLL(query->catblock_filter), IBLL(headers[docid].category));
                 goto next;
             }
             /* multicat filter */

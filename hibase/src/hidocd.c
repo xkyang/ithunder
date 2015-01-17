@@ -1257,6 +1257,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
         hidoc->set_dict(hidoc, dictfile, http_default_charset, dictrules,mode);
         hidoc->set_ccompress_status(hidoc, iniparser_getint(dict, "HIDOCD:ccompress_status", 0));
         hidoc->set_phrase_status(hidoc, iniparser_getint(dict, "HIDOCD:phrase_status", 0));
+        hidoc->set_del_status(hidoc, iniparser_getint(dict, "HIDOCD:del_status", 0));
         hidoc->state->need_update_numbric = iniparser_getint(dict, "HIDOCD:need_update_numric", 0);
     }
     else

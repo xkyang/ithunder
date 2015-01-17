@@ -164,8 +164,8 @@ typedef struct _ITERM
     int termid;
     int docid;
     int ndocid;
-    int fields;
     int term_count;
+    int fields;
     int prevnext_size;
     int last;
     int weight;
@@ -410,6 +410,7 @@ typedef struct _IDISPLAY
 #define IB_RANGE_FROM           0x01
 #define IB_RANGE_TO             0x02
 #define IB_RANGE_IN             0x04
+#define IB_RANGE_NOT            0x08
 /* int range */
 typedef struct  _IRANGE
 {
@@ -434,11 +435,15 @@ typedef struct _FRANGE
     double from;
     double to;
 }FRANGE;
+#define IB_INSET_FILTER  0x01
+#define IB_INSET_BLOCK   0x02
 /* int inset */
 typedef struct  _IINSET
 {
     short       num;
     short       field_id;
+	short       flag;
+	short       bits;
     int32_t     set[IB_IN_MAX];
 }IINSET;
 /* long inset*/
@@ -446,6 +451,8 @@ typedef struct  _LINSET
 {
     short       num;
     short       field_id;
+	short       flag;
+	short       bits;
     int64_t     set[IB_IN_MAX];
 }LINSET;
 /* float inset */
@@ -453,6 +460,8 @@ typedef struct _FINSET
 {
     short       num;
     short       field_id;
+	short       flag;
+	short       bits;
     double      set[IB_IN_MAX];
 }FINSET;
 #define IB_BITFIELDS_FILTER  0x01
@@ -515,22 +524,22 @@ typedef struct _IQUERY
     short       from;
     short       count;
     short       secid;
-    short       dbid;
     short       ntop;
     short       nqterms;
     short       nquerys;
     short       norderby;
     short       groupby;
+    short       dbid;
     short       int_range_count;
     short       long_range_count;
     short       double_range_count;
+    short       int_inset_count;
+    short       long_inset_count;
+    short       double_inset_count;
     short       int_bits_count;
     short       long_bits_count;
     short       status;
     short       nvqterms;
-    short       int_inset_count;
-    short       long_inset_count;
-    short       double_inset_count;
     short       nquery;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
