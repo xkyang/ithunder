@@ -1237,9 +1237,14 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                    field_id = atoi(p);
                    new_field_id = 1;
                 }
-                while(*p != '[' && *p != '\0')++p;
-                if(*p != '\0')++p;
-                while(*p != '\0' && *p != ']')
+                while(*p != '[' && *p != '{' && *p != '\0')++p;
+                if(*p != '\0')
+				{
+                    if(*p == '[') flag = IB_INSET_FILTER;
+                    else flag = IB_INSET_BLOCK;
+					++p;
+				}
+                while(*p != '\0' && *p != ']' && *p != '}')
                 {
                     while(*p == 0x20)++p;
                     if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
@@ -1256,6 +1261,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         }
                         if(query->int_inset_list[k].num >= IB_IN_MAX)continue;
                         num = query->int_inset_list[k].num++;
+                        query->int_inset_list[k].flag = flag;
                         query->int_inset_list[k].field_id = field_id;
                         query->int_inset_list[k].set[num]  = atoi(in_ptr);
                         while(num > 0 && query->int_inset_list[k].set[num] < query->int_inset_list[k].set[num-1])
@@ -1276,6 +1282,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         }
                         if(query->long_inset_list[k].num >= IB_IN_MAX)continue;
                         num = query->long_inset_list[k].num++;
+                        query->long_inset_list[k].flag = flag;
                         query->long_inset_list[k].field_id = field_id;
                         query->long_inset_list[k].set[num]  = atoll(in_ptr);
                         while(num > 0 && query->long_inset_list[k].set[num] < query->long_inset_list[k].set[num-1])
@@ -1296,6 +1303,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         }
                         if(query->double_inset_list[k].num >= IB_IN_MAX)continue;
                         num = query->double_inset_list[k].num++;
+                        query->double_inset_list[k].flag = flag;
                         query->double_inset_list[k].field_id = field_id;
                         query->double_inset_list[k].set[num]  = atof(in_ptr);
                         while(num > 0 && query->double_inset_list[k].set[num] < query->double_inset_list[k].set[num-1])
@@ -1307,7 +1315,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         }
                     }
                 }
-                while((*p!='\0')&&((*p==0x20)||(*p==']')||(*p==';')||(*p==',')))++p;
+                while((*p!='\0')&&((*p==0x20)||(*p==']')||(*p=='}')||(*p==';')||(*p==',')))++p;
                 if(p == last)break;
             }
         }
@@ -1365,10 +1373,15 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 last = p;
                 range_from = NULL;
                 range_to = NULL;
+				flag = 0;
                 while(*p == 0x20)++p;
                 if(*p != '\0')field_id = atoi(p);
-                while(*p != '[' && *p != '\0')++p;
-                if(*p != '\0')++p;
+                while(*p != '[' && *p != '{' && *p != '\0')++p;
+                if(*p != '\0')
+				{
+                    if(*p == '{') flag = IB_RANGE_NOT;
+					++p;
+				}
                 while(*p == 0x20)++p;
                 if((*p >= '0' && *p <= '9') || *p == '-') range_from = p;
                 while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
@@ -1383,6 +1396,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         && query->int_range_count < IB_INT_INDEX_MAX)
                 {
                     k = query->int_range_count++;
+                    query->int_range_list[k].flag |= flag;
                     query->int_range_list[k].field_id = field_id;
                     if(range_from) 
                     {
@@ -1406,6 +1420,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         && query->long_range_count < IB_LONG_INDEX_MAX)
                 {
                     k = query->long_range_count++;
+                    query->long_range_list[k].flag |= flag;
                     query->long_range_list[k].field_id = field_id;
                     if(range_from) 
                     {
@@ -1429,6 +1444,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         && query->double_range_count < IB_DOUBLE_INDEX_MAX)
                 {
                     k = query->double_range_count++;
+                    query->double_range_list[k].flag |= flag;
                     query->double_range_list[k].field_id = field_id;
                     if(range_from) 
                     {

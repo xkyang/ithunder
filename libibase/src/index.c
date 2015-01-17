@@ -140,7 +140,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 iheader->slevel      = docheader->slevel;
                 iheader->rank        = docheader->rank;
                 iheader->globalid    = docheader->globalid;
-                WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
+                DEBUG_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
             }
         }
         /* index */

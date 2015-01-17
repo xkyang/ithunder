@@ -201,11 +201,11 @@ DB *db_init(char *dbdir, int mode)
                     db->dbsio[i].size = st.st_size;
                 }
                 DB_CHECK_MMAP(db, i);
-                WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
+                DEBUG_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
                 if(db->dbsio[i].map && db->state->last_id == 0 && db->state->last_off == 0)
                 {
                     memset(db->dbsio[i].map, 0, DB_MFILE_SIZE);
-                    WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
+                    DEBUG_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
                 }
             }
             else
@@ -329,7 +329,7 @@ void db_push_mblock(DB *db, char *mblock, int block_index)
         }
         else
         {
-            WARN_LOGGER(db->logger, "free-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
+            DEBUG_LOGGER(db->logger, "free-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
             db->xx_total += (off_t)db_xblock_list[block_index].block_size;
             xmm_free(mblock, db_xblock_list[block_index].block_size);
             --(db->xblocks[block_index].total);
@@ -350,7 +350,7 @@ char *db_pop_mblock(DB *db, int block_index)
         if(db->xblocks[block_index].nmblocks > 0)
         {
             x = --(db->xblocks[block_index].nmblocks);
-            WARN_LOGGER(db->logger, "pop_qmblock() block_index:%d nmblocks:%d", block_index, x);
+            DEBUG_LOGGER(db->logger, "pop_qmblock() block_index:%d nmblocks:%d", block_index, x);
             mblock = db->xblocks[block_index].mblocks[x];
             db->xblocks[block_index].mblocks[x] = NULL;
         }
@@ -360,7 +360,7 @@ char *db_pop_mblock(DB *db, int block_index)
             db->mm_total += (off_t)db_xblock_list[block_index].block_size;
             if((db->xblocks[block_index].total)++ > db_xblock_list[block_index].blocks_max)
             {
-                WARN_LOGGER(db->logger, "new-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
+                DEBUG_LOGGER(db->logger, "new-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
             }
         }
         RWLOCK_UNLOCK(db->mutex_mblock);
@@ -378,7 +378,7 @@ char *db_new_data(DB *db, size_t size)
         if(size > DB_MBLOCK_MAX)
         {
             data = (char *)xmm_new(size);
-            WARN_LOGGER(db->logger, "xmm_new(%lu)", size);
+            DEBUG_LOGGER(db->logger, "xmm_new(%lu)", size);
         }
         else 
         {
@@ -393,7 +393,7 @@ char *db_new_data(DB *db, size_t size)
         /*
         if(db->mm_total > (off_t)1073741824)
         {
-            WARN_LOGGER(db->logger, "xblock_max:%d mm:%lld xx:%lld 32:%d 16M:%d 8M:%d 4M:%d 2M:%d 1M:%d 512K:%d 256K:%d 128K:%d 64K:%d 32K:%d 16K:%d 8K:%d 4K:%d", db->block_max, LL(db->mm_total), LL(db->xx_total), db->xblocks[13].total, db->xblocks[12].total, db->xblocks[11].total, db->xblocks[10].total, db->xblocks[9].total, db->xblocks[8].total, db->xblocks[7].total, db->xblocks[6].total, db->xblocks[5].total, db->xblocks[4].total, db->xblocks[3].total, db->xblocks[2].total, db->xblocks[1].total, db->xblocks[0].total);
+            DEBUG_LOGGER(db->logger, "xblock_max:%d mm:%lld xx:%lld 32:%d 16M:%d 8M:%d 4M:%d 2M:%d 1M:%d 512K:%d 256K:%d 128K:%d 64K:%d 32K:%d 16K:%d 8K:%d 4K:%d", db->block_max, LL(db->mm_total), LL(db->xx_total), db->xblocks[13].total, db->xblocks[12].total, db->xblocks[11].total, db->xblocks[10].total, db->xblocks[9].total, db->xblocks[8].total, db->xblocks[7].total, db->xblocks[6].total, db->xblocks[5].total, db->xblocks[4].total, db->xblocks[3].total, db->xblocks[2].total, db->xblocks[1].total, db->xblocks[0].total);
         }
         */
     }
@@ -409,7 +409,7 @@ void db_free_data(DB *db, char *data, size_t size)
     {
         if(size > DB_MBLOCK_MAX) 
         {
-            WARN_LOGGER(db->logger, "xmm_free(%p,%lu)", data, size);
+            DEBUG_LOGGER(db->logger, "xmm_free(%p,%lu)", data, size);
             xmm_free(data, size);
         }
         else 
@@ -584,7 +584,7 @@ do                                                                              
         {                                                                                   \
             if(xdb->dbxio.map) memset((char *)(xdb->dbxio.map)+xdb->dbxio.old, 0,           \
                     xdb->dbxio.end - xdb->dbxio.old);                                       \
-            WARN_LOGGER(xdb->logger, "ftruncate dbxio[%d] to %lld", rid,LL(xdb->dbxio.end));\
+            DEBUG_LOGGER(xdb->logger, "ftruncate dbxio[%d] to %lld", rid,LL(xdb->dbxio.end));\
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -743,7 +743,7 @@ int db_set_data(DB *db, int id, char *data, int ndata)
     if(db && id >= 0 && data && ndata > 0)
     {
         ret = db__set__data(db, id, data, ndata);
-        WARN_LOGGER(db->logger, "id:%d ndata:%d ret:%d", id, ndata, ret);
+        DEBUG_LOGGER(db->logger, "id:%d ndata:%d ret:%d", id, ndata, ret);
     }
     return ret;
 }
@@ -1448,7 +1448,7 @@ void db_reset(DB *db)
             if(sprintf(path, "%s/base/%d/%d.db", db->basedir, i/DB_DIR_FILES, i))
             {
                 ret = remove(path);
-                WARN_LOGGER(db->logger, "remove db[%d][%s] => %d", i, path, ret);
+                DEBUG_LOGGER(db->logger, "remove db[%d][%s] => %d", i, path, ret);
             }
         }
         /* link */
@@ -1526,7 +1526,7 @@ void db_destroy(DB *db)
             if(sprintf(path, "%s/base/%d/%d.db", db->basedir, i/DB_DIR_FILES, i))
             {
                 ret = remove(path);
-                WARN_LOGGER(db->logger, "remove db[%d][%s] => %d", i, path, ret);
+                DEBUG_LOGGER(db->logger, "remove db[%d][%s] => %d", i, path, ret);
             }
         }
         /* link */

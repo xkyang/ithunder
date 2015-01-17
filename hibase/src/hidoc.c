@@ -1086,7 +1086,7 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
 int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
 {
     int id = -1, nodeid = 0, x = 0, k = 0, *px = NULL, 
-        left = 0, last = 0, n = 0;//, *int_index = 0, z = 0;
+        left = 0, last = 0, n = 0, /* *int_index = 0, */z = 0;
     DOCHEADER *docheader = NULL;
     //int64_t *long_index = NULL;
     //double *double_index = NULL;
@@ -1196,6 +1196,7 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
 					{
 					   if(hidoc->state->del_status == HI_DELSTATUS_PHYSICS)
 					   {
+						  ++z;
 					      continue;
 					   }
 					   else
@@ -1286,6 +1287,7 @@ end:
                 id = tasks[k].popid = last ;
             }
             else id = -1;
+			tasks[k].count += z; //add the deleted document number
         }
         else id = -2;
         MUTEX_UNLOCK(hidoc->mutex);
