@@ -80,6 +80,7 @@ static void *logger = NULL;
 static char *ibase_basedir = NULL;
 static int  ibase_used_for = 0;
 static int  ibase_mmsource_status = 0;
+static int  ibase_ignore_secid = 0;
 //static int httpd_page_num  = 20;
 //static int httpd_page_max  = 50;
 static char *highlight_start = "<font color=red>";
@@ -278,6 +279,7 @@ int indexd_index_handler(CONN *conn)
                         }
                         db = pools[dbid];
                     }
+                    if(ibase_ignore_secid) docheader->secid = 0;
                     if((ibase_add_document(db, &block)) != 0)
                     {
                         FATAL_LOGGER(logger, "Add documents[%d][%d] failed, %s", i, docheader->globalid, strerror(errno));
@@ -1980,6 +1982,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     sbase->set_evlog_level(sbase, iniparser_getint(dict, "SBASE:evlog_level", 0));
     /* IBASE */
     ibase_used_for = iniparser_getint(dict, "IBASE:used_for", 0);
+    ibase_ignore_secid = iniparser_getint(dict, "IBASE:ignore_secid", 0);
     ibase_mmsource_status = iniparser_getint(dict, "IBASE:mmsource_status", 1);
     if((ibase_basedir = iniparser_getstr(dict, "IBASE:basedir")) == NULL) 
     {

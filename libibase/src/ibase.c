@@ -335,7 +335,6 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
             ibase->index = mdb_init(path, 0);
         }
-
         /* check int/long/double index*/
         /*
         ibase_check_int_index(ibase);

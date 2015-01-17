@@ -907,7 +907,7 @@ void hidocd_task_handler(void *arg)
     {
         if(hidoc->parse_document(hidoc, tasks[id].hindex) >= 0)
         {
-            //DEBUG_LOGGER(logger, "over for tasks[%d]", id);
+            DEBUG_LOGGER(logger, "over for tasks[%d]", id);
             hidocd->newtask(hidocd, &hidocd_task_handler, (void *)(((long )id+1)));
         }
         else 
@@ -1180,6 +1180,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     httpd->session.data_handler = &httpd_data_handler;
     httpd->session.timeout_handler = &httpd_timeout_handler;
     httpd->session.oob_handler = &httpd_oob_handler;
+    ntask = iniparser_getint(dict, "HIDOCD:ntask", 4);
     if((hidoc = hidoc_init()))
     {
         hidoc->log_access = iniparser_getint(dict, "HIDOCD:log_access", 0);
@@ -1199,7 +1200,6 @@ int sbase_initialize(SBASE *sbase, char *conf)
         _exit(-1);
     }
     LOGGER_INIT(logger, iniparser_getstr(dict, "HIDOCD:access_log"));
-    ntask = iniparser_getint(dict, "HIDOCD:ntask", 4);
     tasks = (ITASK *)xmm_mnew(ntask * sizeof(ITASK));
     if((taskqueue = iqueue_init()))
     {

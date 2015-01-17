@@ -544,7 +544,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->int_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xint = IMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->int_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
@@ -592,7 +592,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->long_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xlong = LMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->long_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
@@ -640,7 +640,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->double_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xdouble = DMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->double_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
