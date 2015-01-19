@@ -119,7 +119,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->int_inset_count; i++)
             {
                 if((k = query->int_inset_list[i].field_id) >= int_index_from 
-                        && k < int_index_to && (query->int_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < int_index_to && ((query->int_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->int_inset_list[i].num) > 0))
                 {
 	            k += IB_INT_OFF - int_index_from ;
@@ -136,7 +136,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->long_inset_count; i++)
             {
                 if((k = query->long_inset_list[i].field_id) >= long_index_from 
-                        && k < long_index_to && (query->long_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < long_index_to && ((query->long_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->long_inset_list[i].num) > 0))
                 {
 	            k += IB_LONG_OFF - long_index_from ;
@@ -153,7 +153,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->double_inset_count; i++)
             {
                 if((k = query->double_inset_list[i].field_id) >= double_index_from 
-                        && k < double_index_to && (query->double_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < double_index_to && ((query->double_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->double_inset_list[i].num) > 0))
                 {
 	            k += IB_DOUBLE_OFF - double_index_from ;
