@@ -119,11 +119,11 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->int_inset_count; i++)
             {
                 if((k = query->int_inset_list[i].field_id) >= int_index_from 
-                        && k < int_index_to && (query->int_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < int_index_to && ((query->int_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->int_inset_list[i].num) > 0))
                 {
 	            k += IB_INT_OFF - int_index_from ;
-                    if(!ibase->state->mfields[secid][k]) continue;
+                if(!ibase->state->mfields[secid][k]) continue;
 	            n = imap_ins(ibase->state->mfields[secid][k], query->int_inset_list[i].set, inset_num, NULL);
 				if(0 == n) goto end;
 	            if(min_set_num == -1 || n < min_set_num)
@@ -136,7 +136,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->long_inset_count; i++)
             {
                 if((k = query->long_inset_list[i].field_id) >= long_index_from 
-                        && k < long_index_to && (query->long_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < long_index_to && ((query->long_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->long_inset_list[i].num) > 0))
                 {
 	            k += IB_LONG_OFF - long_index_from ;
@@ -153,7 +153,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             for(i = 0; i < query->double_inset_count; i++)
             {
                 if((k = query->double_inset_list[i].field_id) >= double_index_from 
-                        && k < double_index_to && (query->double_inset_list[i].flag & IB_INSET_BLOCK == 0)
+                        && k < double_index_to && ((query->double_inset_list[i].flag & IB_INSET_BLOCK) == 0)
                         && ((inset_num = query->double_inset_list[i].num) > 0))
                 {
 	            k += IB_DOUBLE_OFF - double_index_from ;
@@ -353,7 +353,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->int_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xint = IMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->int_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
@@ -402,7 +402,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->long_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xlong = LMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->long_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
@@ -451,7 +451,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                         && ibase->state->mfields[secid][jj]
                         && ((inset_num = query->double_inset_list[kk].num) > 0))
                     {
-                        imax = inset_num - 1;imin = 0;
+                        imax = inset_num - 1;imin = 0;ii = 0;
                         xdouble = DMAP_GET(ibase->state->mfields[secid][jj], docid);
 						if(query->double_inset_list[kk].flag == IB_INSET_FILTER) //in
 						{
@@ -510,8 +510,9 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xint >= ifrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xint <= ito) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xint <= ito) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xint >= ifrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xint >= ifrom) && (xint <= ito)) goto next;
 					}
                 }
                 for(i = 0; i < query->int_bits_count; i++)
@@ -553,8 +554,9 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xlong >= lfrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xlong <= lto) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xlong <= lto) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xlong >= lfrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xlong >= lfrom) && (xlong <= lto)) goto next;
 					}
                 }
                 for(i = 0; i < query->long_bits_count; i++)
@@ -596,8 +598,9 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xdouble >= dfrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xdouble <= dto) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xdouble <= dto) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xdouble >= dfrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xdouble >= dfrom) && (xdouble <= dto)) goto next;
 					}
                 }
             }
