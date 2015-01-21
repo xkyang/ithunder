@@ -1391,7 +1391,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(*p == ',' || *p == ';')++p;
                 while(*p == 0x20)++p;
                 if((*p >= '0' && *p <= '9') || *p == '-') range_to = p;
-                while(*p != ']' && *p != '\0')++p;
+                while(*p != ']' && *p != '}' && *p != '\0')++p;
                 while(*p != ',' && *p != ';' && *p != '\0')++p;
                 if(*p != '\0')++p;
                 if(field_id >= int_index_from && field_id < int_index_to 

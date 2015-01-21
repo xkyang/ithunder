@@ -698,8 +698,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xint >= ifrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xint <= ito) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xint <= ito) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xint >= ifrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xint >= ifrom) && (xint <= ito)) goto next;
 					}
                 }
                 for(i = 0; i < query->int_bits_count; i++)
@@ -739,8 +740,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xlong >= lfrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xlong <= lto) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xlong <= lto) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xlong >= lfrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xlong >= lfrom) && (xlong <= lto)) goto next;
 					}
                 }
                 for(i = 0; i < query->long_bits_count; i++)
@@ -780,8 +782,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 					}
 					else
 					{
-                       if((range_flag & IB_RANGE_FROM) && xdouble >= dfrom) goto next;
-                       if((range_flag & IB_RANGE_TO) && xdouble <= dto) goto next;
+                       if(!(range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && xdouble <= dto) goto next;
+                       if((range_flag & IB_RANGE_FROM) && !(range_flag & IB_RANGE_TO) && xdouble >= dfrom) goto next;
+                       if((range_flag & IB_RANGE_FROM) && (range_flag & IB_RANGE_TO) && (xdouble >= dfrom) && (xdouble <= dto)) goto next;
 					}
                 }
             }
