@@ -75,6 +75,7 @@ do                                                                              
     while(s < es)                                                                           \
     {                                                                                       \
         if(*s == '\r' || *s == '\n' || *s == '\0' || *s == '\t')++s;                        \
+		else if(*s == '\\'){*out++ = '\\';*out++ = '\\';*out++ = '\\';++s;}                 \
         else if(*s == '\''){out += sprintf(out, "&#39;");++s;}                              \
         else if(*s == '"'){out += sprintf(out, "&#34;");++s;}                               \
         else *out++ = *s++;                                                                 \
@@ -88,6 +89,7 @@ do                                                                              
     {                                                                                       \
         if(*s == '\n' && (p - out) >= IB_PHRASE_LIMIT)break;                                \
         if(*s == '\r' || *s == '\n' || *s == '\0' || *s == '\t')++s;                        \
+		else if(*s == '\\'){*p++ = '\\';*p++ = '\\';*p++ = '\\';++s;}                       \
         else if(*s == '\''){p += sprintf(p, "&#39;");++s;}                                  \
         else if(*s == '"'){p += sprintf(p, "&#34;");++s;}                                   \
         else *p++ = *s++;                                                                   \
