@@ -553,7 +553,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
                 goto next;
             if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
-            && (query->nvqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
+            && (query->nqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {

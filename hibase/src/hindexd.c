@@ -915,7 +915,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
         norderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
-        xint = 0, op = 0, need_rank = 0, usecs = 0, flag = 0, nkeys = 0, num = 0,new_field_id = 0;
+        xint = 0, op = 0, need_rank = 0, usecs = 0, flag = 0, nkeys = 0, num = 0;
     struct timeval tv = {0};
     double xdouble = 0.0;
     int64_t xlong = 0;
@@ -1246,13 +1246,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             while(*p != '\0')
             {
                 last = p;
-                new_field_id = 0;
                 while(*p == 0x20)++p;
-                if(*p != '\0')
-                {
-                   field_id = atoi(p);
-                   new_field_id = 1;
-                }
+                if(*p != '\0')field_id = atoi(p);
                 while(*p != '[' && *p != '{' && *p != '\0')++p;
                 if(*p != '\0')
 				{
@@ -1260,25 +1255,21 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                     else flag = IB_INSET_BLOCK;
 					++p;
 				}
-                while(*p != '\0' && *p != ']' && *p != '}')
+                if(field_id >= int_index_from && field_id < int_index_to
+                   && query->int_inset_count < IB_INSET_MAX)
                 {
-                    while(*p == 0x20)++p;
-                    if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
-                    while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
-                    while(*p == 0x20)++p;
-                    if(*p == ',' || *p == ';')++p;
-                    if(field_id >= int_index_from && field_id < int_index_to) 
+                    k = query->int_inset_count++;
+                    query->int_inset_list[k].flag = flag;
+                    query->int_inset_list[k].field_id = field_id;
+                    while(*p != '\0' && *p != ']' && *p != '}')
                     {
-                        if(1 == new_field_id)
-                        {
-                           if(query->int_inset_count >= IB_INSET_MAX)continue;
-                           k = query->int_inset_count++;
-                           new_field_id = 0;
-                        }
-                        if(query->int_inset_list[k].num >= IB_IN_MAX)continue;
+                        while(*p == 0x20)++p;
+                        if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
+                        while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
+                        while(*p == 0x20)++p;
+                        if(*p == ',' || *p == ';')++p;
+                        if(query->int_inset_list[k].num >= IB_IN_MAX)break;
                         num = query->int_inset_list[k].num++;
-                        query->int_inset_list[k].flag = flag;
-                        query->int_inset_list[k].field_id = field_id;
                         query->int_inset_list[k].set[num]  = atoi(in_ptr);
                         while(num > 0 && query->int_inset_list[k].set[num] < query->int_inset_list[k].set[num-1])
                         {
@@ -1288,18 +1279,22 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             --num;
                         }
                     }
-                    else if(field_id >= long_index_from && field_id < long_index_to) 
+				}
+                else if(field_id >= long_index_from && field_id < long_index_to 
+                        && query->long_inset_count < IB_INSET_MAX)
+                {
+                    k = query->long_inset_count++;
+                    query->long_inset_list[k].flag = flag;
+                    query->long_inset_list[k].field_id = field_id;
+                    while(*p != '\0' && *p != ']' && *p != '}')
                     {
-                        if(1 == new_field_id)
-                        {
-                           if(query->long_inset_count >= IB_INSET_MAX)continue;
-                           k = query->long_inset_count++;
-                           new_field_id = 0;
-                        }
-                        if(query->long_inset_list[k].num >= IB_IN_MAX)continue;
+                        while(*p == 0x20)++p;
+                        if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
+                        while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
+                        while(*p == 0x20)++p;
+                        if(*p == ',' || *p == ';')++p;
+                        if(query->long_inset_list[k].num >= IB_IN_MAX)break;
                         num = query->long_inset_list[k].num++;
-                        query->long_inset_list[k].flag = flag;
-                        query->long_inset_list[k].field_id = field_id;
                         query->long_inset_list[k].set[num]  = atoll(in_ptr);
                         while(num > 0 && query->long_inset_list[k].set[num] < query->long_inset_list[k].set[num-1])
                         {
@@ -1308,28 +1303,32 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             query->long_inset_list[k].set[num] = xlong;
                             --num;
                         }
-                    }
-                    else if(field_id >= double_index_from && field_id < double_index_to)
-                    {
-                        if(1 == new_field_id)
-                        {
-                           if(query->double_inset_count >= IB_INSET_MAX)continue;
-                           k = query->double_inset_count++;
-                           new_field_id = 0;
-                        }
-                        if(query->double_inset_list[k].num >= IB_IN_MAX)continue;
-                        num = query->double_inset_list[k].num++;
-                        query->double_inset_list[k].flag = flag;
-                        query->double_inset_list[k].field_id = field_id;
-                        query->double_inset_list[k].set[num]  = atof(in_ptr);
-                        while(num > 0 && query->double_inset_list[k].set[num] < query->double_inset_list[k].set[num-1])
-                        {
+					}
+               }
+               else if(field_id >= double_index_from && field_id < double_index_to
+                       && query->double_inset_count < IB_INSET_MAX)
+               {
+                   k = query->double_inset_count++;
+                   query->double_inset_list[k].flag = flag;
+                   query->double_inset_list[k].field_id = field_id;
+                   while(*p != '\0' && *p != ']' && *p != '}')
+                   {
+                       while(*p == 0x20)++p;
+                       if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
+                       while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
+                       while(*p == 0x20)++p;
+                       if(*p == ',' || *p == ';')++p;
+                       if(query->double_inset_list[k].num >= IB_IN_MAX)break;
+                       num = query->double_inset_list[k].num++;
+                       query->double_inset_list[k].set[num]  = atof(in_ptr);
+                       while(num > 0 && query->double_inset_list[k].set[num] < query->double_inset_list[k].set[num-1])
+                       {
                             xdouble = query->double_inset_list[k].set[num-1];
                             query->double_inset_list[k].set[num-1] = query->double_inset_list[k].set[num];
                             query->double_inset_list[k].set[num] = xdouble;
                             --num;
-                        }
-                    }
+                       }
+				   }
                 }
                 while((*p!='\0')&&((*p==0x20)||(*p==']')||(*p=='}')||(*p==';')||(*p==',')))++p;
                 if(p == last)break;
