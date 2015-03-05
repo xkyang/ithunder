@@ -1724,7 +1724,6 @@ int httpd_packet_handler(CONN *conn, CB_DATA *packet)
             memset(&query, 0, sizeof(IQUERY));
             if(http_req.nargvs > 0 && httpd_request_handler(conn, &http_req, &query) >= 0) 
             {
-                
                 return httpd_query_handler(conn, &query);
             }
             else
