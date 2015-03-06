@@ -307,7 +307,7 @@ void ibase_unindex(IBASE *ibase, IHEADER *headers, ITERM *itermlist, XMAP *_xmap
         itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
         itermlist[_x_].xnode.bithit = 0;
         itermlist[_x_].xnode.bitnot = 0;
-        if((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit) 
+        if(itermlist[_x_].bithit && ((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit)) 
             itermlist[_x_].xnode.bithit |= 1 << _x_;
         if(itermlist[_x_].fields & itermlist[_x_].bitnot) 
             itermlist[_x_].xnode.bitnot |= 1 << _x_;
@@ -520,6 +520,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                     && !(query->fields_filter & xnode->bitfields))
                 goto next;
             /* boolen check */
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld query->bitsnot:%d query->bitsand:%d xnode->(bithits:%d bitnot:%d bithit:%d) bithit:%d", docid, LL(headers[docid].globalid), query->operators.bitsnot, query->operators.bitsand, xnode->bithits, xnode->bitnot, xnode->bithit, bithit);
             if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
                 goto next;
             if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
@@ -527,14 +528,14 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {
-                DEBUG_LOGGER(ibase->logger, "docid:%d xnode->bitnot:%d xnode->bithit:%d bithit:%d", docid, xnode->bitnot,xnode->bithit,bithit);
                 if(xnode->bitnot) goto next;
                 if(xnode->bithit != bithit) goto next;
             }
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
-            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nquerys:%d scale:%d xnode->nvhits:%d", docid, LL(headers[docid].globalid), nquerys, scale, xnode->nvhits);
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             /* in/range filter */
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld inset(int:%d long:%d double:%d)", docid, LL(headers[docid].globalid), query->int_inset_count, query->long_inset_count, query->double_inset_count);
             if(query->int_inset_count > 0)
             {
                for(kk = 0; kk < query->int_inset_count; kk++)
@@ -679,6 +680,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 	                }
                 }
             }
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld range(int:%d/%d long:%d/%d double:%d)", docid, LL(headers[docid].globalid), query->int_range_count, query->int_bits_count, query->long_range_count, query->long_bits_count, query->double_range_count);
             if((query->int_range_count > 0 || query->int_bits_count > 0))
             {
                 for(i = 0; i < query->int_range_count; i++)
@@ -1059,7 +1061,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort qid:%d documents res:%d/%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
+        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         //free db blocks
         if(itermlist)
