@@ -1059,7 +1059,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort qid:%d documents res:%d/%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
+        ACCESS_LOGGER(ibase->logger, "bsort text qid:%d documents res:%d/%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         //free db blocks
         if(itermlist)
