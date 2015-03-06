@@ -601,8 +601,7 @@ int imap_in(IMAP *imap, int32_t key, u32_t *list)
         i = imap_find_kv(imap, k, key);
         if(i == -1)
         {
-           RWLOCK_UNLOCK(imap->rwlock);
-           return ret;
+			goto end;
         }
         do
         {
@@ -629,6 +628,7 @@ int imap_in(IMAP *imap, int32_t key, u32_t *list)
             }
             i = 0;
         }while(++k < n && imap->slots[k].min == key);
+end:		
         RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
@@ -648,8 +648,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
         i = imap_find_kv(imap, k, from);
         if(i == -1)
         {
-           RWLOCK_UNLOCK(imap->rwlock);
-           return ret;
+			goto end;
         }
         ii = imap_find_kv2(imap, kk, to);
         if(k == kk)
@@ -686,6 +685,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
                 for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
+end:		
         RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;

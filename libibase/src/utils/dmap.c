@@ -601,8 +601,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
         i = dmap_find_kv(dmap, k, key);
         if(i == -1)
         {
-           RWLOCK_UNLOCK(dmap->rwlock);
-           return ret;
+			goto end;
         }
         do
         {
@@ -629,6 +628,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
             }
             i = 0;
         }while(++k < n && dmap->slots[k].min == key);
+end:		
         RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
@@ -648,8 +648,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
         i = dmap_find_kv(dmap, k, from);
         if(i == -1)
         {
-           RWLOCK_UNLOCK(dmap->rwlock);
-           return ret;
+			goto end;
         }
         ii = dmap_find_kv2(dmap, kk, to);
         if(k == kk)
@@ -686,6 +685,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
                 for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
+end:		
         RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;

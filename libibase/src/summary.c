@@ -78,6 +78,7 @@ do                                                                              
 		else if(*s == '\\'){*out++ = '\\';*out++ = '\\';++s;}                               \
         else if(*s == '\''){out += sprintf(out, "&#39;");++s;}                              \
         else if(*s == '"'){out += sprintf(out, "&#34;");++s;}                               \
+        else if((*s > 0) && (*s < 32)){out += sprintf(out, "\\u%04x",*s);++s;}              \
         else *out++ = *s++;                                                                 \
     }                                                                                       \
 }while(0)
@@ -92,6 +93,7 @@ do                                                                              
 		else if(*s == '\\'){*p++ = '\\';*p++ = '\\';++s;}                                   \
         else if(*s == '\''){p += sprintf(p, "&#39;");++s;}                                  \
         else if(*s == '"'){p += sprintf(p, "&#34;");++s;}                                   \
+        else if((*s > 0) && (*s < 32)){p += sprintf(p, "\\u%04x",*s);++s;}                  \
         else *p++ = *s++;                                                                   \
     }                                                                                       \
 }while(0)

@@ -76,10 +76,10 @@ MDB *mdb_init(char *dbdir, int mode)
 
     if(dbdir && (db = (MDB *)xmm_mnew(sizeof(MDB))))
     {
-        RWLOCK_INIT(db->mutex_lnk);
-        RWLOCK_INIT(db->mutex_dbx);
-        RWLOCK_INIT(db->mutex_mblock);
         RWLOCK_INIT(db->mutex);
+        RWLOCK_INIT(db->mutex_dbx);
+        RWLOCK_INIT(db->mutex_lnk);
+        RWLOCK_INIT(db->mutex_mblock);
         strcpy(db->basedir, dbdir);
         /* initialize kmap */
         sprintf(path, "%s/%s", dbdir, "db.kmap");    
@@ -1501,10 +1501,10 @@ void mdb_reset(MDB *db)
         db->state->last_id = 0;
         db->state->last_off = 0;
         db->state->mdb_id_max = 0;
-        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_mblock);
         RWLOCK_UNLOCK(db->mutex_lnk);
         RWLOCK_UNLOCK(db->mutex_dbx);
-        RWLOCK_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex);
     }
     return ;
 }
@@ -1598,10 +1598,10 @@ void mdb_destroy(MDB *db)
         db->state->last_id = 0;
         db->state->last_off = 0;
         db->state->mdb_id_max = 0;
-        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_mblock);
         RWLOCK_UNLOCK(db->mutex_lnk);
         RWLOCK_UNLOCK(db->mutex_dbx);
-        RWLOCK_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex);
     }
     return ;
 }
@@ -1640,10 +1640,10 @@ void mdb_clean(MDB *db)
             RWLOCK_DESTROY(db->mutexs[i]);
         }
         LOGGER_CLEAN(db->logger);
-        RWLOCK_DESTROY(db->mutex_lnk);
-        RWLOCK_DESTROY(db->mutex_dbx);
-        RWLOCK_DESTROY(db->mutex_mblock);
         RWLOCK_DESTROY(db->mutex);
+        RWLOCK_DESTROY(db->mutex_dbx);
+        RWLOCK_DESTROY(db->mutex_lnk);
+        RWLOCK_DESTROY(db->mutex_mblock);
         xmm_free(db, sizeof(MDB));
     }
     return ;
