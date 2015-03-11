@@ -131,17 +131,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 memset(ibase->state->headers[secid].map + ibase->state->headers[secid].old, 0, 
                         ibase->state->headers[secid].end -  ibase->state->headers[secid].old);
             }
-            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
-            {
-                iheader->status      = docheader->status;
-                iheader->terms_total = docheader->terms_total;
-                iheader->crc         = docheader->crc;
-                iheader->category    = docheader->category;
-                iheader->slevel      = docheader->slevel;
-                iheader->rank        = docheader->rank;
-                iheader->globalid    = docheader->globalid;
-                DEBUG_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
-            }
         }
         /* index */
         //end = block->data + block->ndata;
@@ -156,16 +145,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
             if(termid > 0 && termlist[i].term_len > 0 && termlist[i].prevnext_size >= 0 
                 && (ret=mmtrie_add((MMTRIE *)ibase->mmtrie,term,termlist[i].term_len,termid))>0)
             {
-                MUTEX_LOCK(ibase->mutex_termstate);
-                if(termid > ibase->state->termid){ADD_TERMSTATE(ibase, termid);}
-                ((TERMSTATE *)(ibase->termstateio.map))[termid].len = termlist[i].term_len;
-                ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
-                MUTEX_UNLOCK(ibase->mutex_termstate);
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
                     last_docid = 0;
+					ndocid = -1;
                     if(mdb_get_tag(PMDB(index), termid, &last_docid) == 0)
+					{
                         ndocid = docid - last_docid;
+                        if(ndocid <= 0) goto term_state_update;
+					}
                     else
                     {
                         ndocid = docid;
@@ -210,6 +198,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     mdb_set_tag(PMDB(index), termid, docid);
                     if(data){xmm_free(data, ndata); data = NULL;}
                 }
+term_state_update:
+                MUTEX_LOCK(ibase->mutex_termstate);
+                if(termid > ibase->state->termid){ADD_TERMSTATE(ibase, termid);}
+                if(ndocid > 0)
+                {
+                    ((TERMSTATE *)(ibase->termstateio.map))[termid].len=termlist[i].term_len;
+                    ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
+				}
+                MUTEX_UNLOCK(ibase->mutex_termstate);
             }
             else 
             {
@@ -256,6 +253,17 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
                     k++;
                 }
+            }
+            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
+            {
+                iheader->status      = docheader->status;
+                iheader->terms_total = docheader->terms_total;
+                iheader->crc         = docheader->crc;
+                iheader->category    = docheader->category;
+                iheader->slevel      = docheader->slevel;
+                iheader->rank        = docheader->rank;
+                iheader->globalid    = docheader->globalid;
+                DEBUG_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
             }
         }
         ret = 0;
@@ -348,11 +356,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 }
 
 /* del index */
-int ibase_del_index(IBASE *ibase, int localid)
+int ibase_del_index(IBASE *ibase, int secid, int localid)
 {
     MHEADER *mheader = NULL;
     IHEADER *iheader = NULL;
-    int ret = -1;
+    int ret = -1, i = 0, k = 0, n = 0;
 
     if((mheader = PMHEADER(ibase, localid))) 
     {
@@ -361,6 +369,44 @@ int ibase_del_index(IBASE *ibase, int localid)
         {
             ibase->state->ttotal -= iheader->terms_total;
             iheader->status = -1;
+#if 0			
+            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+            {
+                /* del int index */
+                if((n = ibase->state->int_index_fields_num) > 0) 
+                {
+                    n += IB_INT_OFF;
+                    k = 0;
+                    for(i = IB_INT_OFF; i < n; i++)
+                    {
+                        IMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+                /* del long index */
+                if((n = ibase->state->long_index_fields_num) > 0) 
+                {
+                    n += IB_LONG_OFF;
+                    k = 0;
+                    for(i = IB_LONG_OFF; i < n; i++)
+                    {
+                        LMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+                /* del double index */
+                if((n = ibase->state->double_index_fields_num) > 0) 
+                {
+                    n += IB_DOUBLE_OFF;
+                    k = 0;
+                    for(i = IB_DOUBLE_OFF; i < n; i++)
+                    {
+                        DMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+            }
+#endif			
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
@@ -407,7 +453,7 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                         }
                         else if(docheader->crc != mheader->crc) 
                         {
-                            ibase_del_index(ibase, localid);
+                            ibase_del_index(ibase, secid, localid);
                             newid = ++(ibase->state->ids[secid]);
                             DEBUG_LOGGER(ibase->logger, "ready_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                             mheader->docid = newid;
