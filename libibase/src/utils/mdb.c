@@ -666,13 +666,13 @@ int mdb__set__data(MDB *db, int id, char *data, int ndata)
                 DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
                 if(ndata > dbx[id].block_size)
                 {
-                    FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d", lnk.blockid, ndata, blocks_count);
+                    FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d id:%d", lnk.blockid, ndata, blocks_count, id);
                     _exit(-1);
                 }
             }
             else
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d ndata:%d, %s", blocks_count, id, ndata, strerror(errno));
                 _exit(-1);
             }
         }
@@ -846,7 +846,7 @@ int mdb__add__data(MDB *db, int id, char *data, int ndata)
             blocks_count = MDB_BLOCKS_COUNT(size);
             if(mdb_pop_block(db, blocks_count, &lnk) != 0)
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d size:%d, %s", blocks_count, id, size, strerror(errno));
                 _exit(-1);
             }
             if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (oindex = old_lnk.index) >= 0 
@@ -956,7 +956,7 @@ int mdb__resize(MDB *db, int id, int length)
             blocks_count = MDB_BLOCKS_COUNT(size);
             if(mdb_pop_block(db, blocks_count, &lnk) != 0)
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d size:%d, %s", blocks_count, id, size, strerror(errno));
                 _exit(-1);
             }
             if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (x = old_lnk.index) >= 0 
@@ -980,9 +980,9 @@ int mdb__resize(MDB *db, int id, int length)
                 {
                     if((old = mdb_new_data(db, nold)))
                     {
-                        if(mdb_pread(db, index, old, nold, (off_t)(old_lnk.blockid)*(off_t)MDB_BASE_SIZE) <= 0)
+                        if(mdb_pread(db, x, old, nold, (off_t)(old_lnk.blockid)*(off_t)MDB_BASE_SIZE) <= 0)
                         {
-                            FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", index, id, nold, strerror(errno));
+                            FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", x, id, nold, strerror(errno));
                             _exit(-1);
                         }
                         if(mdb_pwrite(db, index, old, nold, (off_t)(lnk.blockid)*(off_t)MDB_BASE_SIZE) <= 0)
@@ -1085,7 +1085,7 @@ void *mdb_truncate_block(MDB *db, int id, int ndata)
     {
         RWLOCK_WRLOCK(db->mutex_dbx);
         CHECK_MDBXMIO(db, id);
-        RWLOCK_WRLOCK(db->mutex_dbx);
+        RWLOCK_UNLOCK(db->mutex_dbx);
         mdb_mutex_rdlock(db, id);
         if(dbx[id].block_size < ndata)
         {
@@ -1114,7 +1114,7 @@ void *mdb_truncate_block(MDB *db, int id, int ndata)
             }
             else
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d ndata:%d, %s", blocks_count, id, ndata, strerror(errno));
                 _exit(-1);
             }
         }
@@ -1203,6 +1203,7 @@ int mdb__read__data(MDB *db, int id, char *data)
                 else
                 {
                     //if(pread(db->dbsio[index].fd, data, n, (off_t)dbx[id].blockid*(off_t)MDB_BASE_SIZE)> 0)
+                    DEBUG_LOGGER(db->logger, "read() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
                     if(mdb_pread(db, index, data, n, (off_t)(dbx[id].blockid)*(off_t)MDB_BASE_SIZE)> 0)
                         ret = n;
                 }

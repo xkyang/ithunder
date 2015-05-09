@@ -76,10 +76,10 @@ DB *db_init(char *dbdir, int mode)
 
     if(dbdir && (db = (DB *)xmm_mnew(sizeof(DB))))
     {
-        RWLOCK_INIT(db->mutex_lnk);
-        RWLOCK_INIT(db->mutex_dbx);
-        RWLOCK_INIT(db->mutex_mblock);
         RWLOCK_INIT(db->mutex);
+        RWLOCK_INIT(db->mutex_dbx);
+        RWLOCK_INIT(db->mutex_lnk);
+        RWLOCK_INIT(db->mutex_mblock);
         strcpy(db->basedir, dbdir);
         /* initialize kmap */
         sprintf(path, "%s/%s", dbdir, "db.kmap");    
@@ -262,8 +262,8 @@ int db_pread(DB *db, int index, void *data, int ndata, off_t offset)
         {
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
+        RWLOCK_UNLOCK(db->dbsio[index].mutex);
         */
-        //RWLOCK_UNLOCK(db->dbsio[index].mutex);
     }
     return n;
 }
@@ -632,13 +632,13 @@ int db__set__data(DB *db, int id, char *data, int ndata)
                 DEBUG_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
                 if(ndata > dbx[id].block_size)
                 {
-                    FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d", lnk.blockid, ndata, blocks_count);
+                    FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d id:%d", lnk.blockid, ndata, blocks_count, id);
                     _exit(-1);
                 }
             }
             else
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d ndata:%d, %s", blocks_count, id, ndata, strerror(errno));
                 _exit(-1);
             }
         }
@@ -812,7 +812,7 @@ int db__add__data(DB *db, int id, char *data, int ndata)
             blocks_count = DB_BLOCKS_COUNT(size);
             if(db_pop_block(db, blocks_count, &lnk) != 0)
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d size:%d, %s", blocks_count, id, size, strerror(errno));
                 _exit(-1);
             }
             if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (oindex = old_lnk.index) >= 0 
@@ -922,7 +922,7 @@ int db__resize(DB *db, int id, int length)
             blocks_count = DB_BLOCKS_COUNT(size);
             if(db_pop_block(db, blocks_count, &lnk) != 0)
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d size:%d, %s", blocks_count, id, size, strerror(errno));
                 _exit(-1);
             }
             if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (x = old_lnk.index) >= 0 
@@ -1079,7 +1079,7 @@ void *db_truncate_block(DB *db, int id, int ndata)
             }
             else
             {
-                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed for id:%d ndata:%d, %s", blocks_count, id, ndata, strerror(errno));
                 _exit(-1);
             }
         }
@@ -1465,10 +1465,10 @@ void db_reset(DB *db)
         db->state->last_id = 0;
         db->state->last_off = 0;
         db->state->db_id_max = 0;
-        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_mblock);
         RWLOCK_UNLOCK(db->mutex_lnk);
         RWLOCK_UNLOCK(db->mutex_dbx);
-        RWLOCK_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex);
     }
     return ;
 }
@@ -1562,10 +1562,10 @@ void db_destroy(DB *db)
         db->state->last_id = 0;
         db->state->last_off = 0;
         db->state->db_id_max = 0;
-        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_mblock);
         RWLOCK_UNLOCK(db->mutex_lnk);
         RWLOCK_UNLOCK(db->mutex_dbx);
-        RWLOCK_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex);
     }
     return ;
 }
@@ -1604,10 +1604,10 @@ void db_clean(DB *db)
             RWLOCK_DESTROY(db->mutexs[i]);
         }
         LOGGER_CLEAN(db->logger);
-        RWLOCK_DESTROY(db->mutex_lnk);
-        RWLOCK_DESTROY(db->mutex_dbx);
-        RWLOCK_DESTROY(db->mutex_mblock);
         RWLOCK_DESTROY(db->mutex);
+        RWLOCK_DESTROY(db->mutex_dbx);
+        RWLOCK_DESTROY(db->mutex_lnk);
+        RWLOCK_DESTROY(db->mutex_mblock);
         xmm_free(db, sizeof(DB));
     }
     return ;

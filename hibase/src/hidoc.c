@@ -104,6 +104,7 @@ int pmkdir(char *path)
         {
             if(*p == '/' )
             {
+                level++;
                 while(*p != '\0' && *p == '/' && *(p+1) == '/')++p;
                 if(level > 0)
                 {
@@ -114,7 +115,6 @@ int pmkdir(char *path)
                     if(ret != 0 && mkdir(fullpath, 0755) != 0) return -1;
                     *p = '/';
                 }
-                level++;
             }
             ++p;
         }
