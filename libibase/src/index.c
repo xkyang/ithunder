@@ -145,6 +145,10 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
             if(termid > 0 && termlist[i].term_len > 0 && termlist[i].prevnext_size >= 0 
                 && (ret=mmtrie_add((MMTRIE *)ibase->mmtrie,term,termlist[i].term_len,termid))>0)
             {
+                if(termid <= ibase->state->termid)
+				{
+                    if(((TERMSTATE *)(ibase->termstateio.map))[termid].status == IB_BTERM_BLOCK) goto term_list_next;
+				}
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
                     last_docid = 0;
@@ -213,6 +217,7 @@ term_state_update:
                 FATAL_LOGGER(ibase->logger, "Invalid ret:%d term[%d]{%.*s} termid:%d in doc:%d", ret, i, termlist[i].term_len, term, termid, docid);
                 _exit(-1);
             }
+term_list_next:			
             term += termlist[i].term_len;
             prevnext += termlist[i].prevnext_size;
         }
