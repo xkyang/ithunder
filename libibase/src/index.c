@@ -147,6 +147,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
             {
                 if(termid <= ibase->state->termid)
 				{
+				    DEBUG_LOGGER(ibase->logger, "STATE{%.*s} termid:%d max-termid:%d status:%d/%d", termlist[i].term_len, term, termid,ibase->state->termid,((TERMSTATE *)(ibase->termstateio.map))[termid].status,IB_BTERM_BLOCK);
                     if(((TERMSTATE *)(ibase->termstateio.map))[termid].status == IB_BTERM_BLOCK) goto term_list_next;
 				}
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
