@@ -841,7 +841,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort value qid:%d documents res:%d/%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
+        ACCESS_LOGGER(ibase->logger, "bsort value qid:%d secid:%d documents res:%d/%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, secid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         if(docs) mdb_free_data(PMDB(ibase->index), (char *)docs, docs_size);
         if(res) res->doctotal = ibase->state->dtotal;

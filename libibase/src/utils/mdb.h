@@ -1,7 +1,7 @@
-#include "mutex.h"
 #ifndef _MDB_H_
 #define _MDB_H_
 #include <pthread.h>
+#include "mutex.h"
 #define MDB_LNK_MAX          8388608
 #define MDB_LNK_INCREMENT    65536
 #define MDB_MDBX_MAX          2000000000
@@ -16,6 +16,7 @@
 #define MDB_MBLOCK_MAX       67108864
 #define MDB_MUTEX_MAX        65536
 #define MDB_USE_MMAP         0x01
+#define MDB_BIGFILE_SIZE     2147483648
 //#define  MDB_MBLOCK_MAX      1048576
 //#define  MDB_MBLOCK_MAX      2097152
 //#define  MDB_MBLOCK_MAX        4194304
@@ -34,15 +35,6 @@
 #define MDB_MFILE_MAX        8192
 #define MDB_BLOCK_INCRE_LEN      0x0
 #define MDB_BLOCK_INCRE_DOUBLE   0x1
-typedef struct _MDBX
-{
-    int block_size;
-    int blockid;
-    int ndata;
-    int index;
-    int tag;
-    int mod_time;
-}MDBX;
 typedef struct _XMIO
 {
     int     fd;
@@ -53,17 +45,6 @@ typedef struct _XMIO
     off_t   size;
     pthread_rwlock_t mutex;
 }XMIO;
-typedef struct _XMLNK
-{
-    int index;
-    int blockid;
-    int count;
-}XMLNK;
-typedef struct _MXXMM
-{
-    int block_size;
-    int blocks_max;
-}MXXMM;
 typedef struct _XMBLOCK
 {
     char *mblocks[MDB_MBLOCKS_MAX];
@@ -75,7 +56,7 @@ typedef struct _XMSTATE
     int status;
     int mode;
     int last_id;
-    int last_off;
+    size_t last_off;
     int mdb_id_max;
     int data_len_max;
     int block_incre_mode;
