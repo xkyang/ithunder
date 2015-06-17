@@ -226,7 +226,7 @@ IMXNODE *imx_insert(IMMX *map, IMXNODE *elm)
 {
     IMXNODE *tmp;
     IMXNODE *parent = NULL;
-    int  comp = 0;
+    int64_t comp = 0;
     tmp = IMX_ROOT(map);
     while (tmp)
     {
@@ -257,7 +257,7 @@ IMXNODE *imx_insert(IMMX *map, IMXNODE *elm)
 IMXNODE *imx_find(IMMX *map, IMXNODE *elm)
 {
     IMXNODE *tmp = IMX_ROOT(map);
-    int  comp = 0;
+    int64_t comp = 0;
     while (tmp)
     {
         comp = (elm->key - tmp->key);

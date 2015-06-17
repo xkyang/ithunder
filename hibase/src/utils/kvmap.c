@@ -226,7 +226,7 @@ KVNODE *kv_insert(KVMAP *map, KVNODE *elm)
 {
     KVNODE *tmp;
     KVNODE *parent = NULL;
-    int  comp = 0;
+    int64_t comp = 0;
     tmp = KV_ROOT(map);
     while (tmp)
     {
@@ -257,7 +257,7 @@ KVNODE *kv_insert(KVMAP *map, KVNODE *elm)
 KVNODE *kv_find(KVMAP *map, KVNODE *elm)
 {
     KVNODE *tmp = KV_ROOT(map);
-    int  comp = 0;
+    int64_t comp = 0;
     while (tmp)
     {
         comp = (elm->key - tmp->key);
