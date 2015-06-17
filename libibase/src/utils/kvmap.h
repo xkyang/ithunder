@@ -6,7 +6,7 @@
 #include "xmm.h"
 typedef struct _KVNODE
 {
-    unsigned int  key;
+    int64_t key;
     void *dptr;
     struct _KVNODE *rbe_left;     
     struct _KVNODE *rbe_right;    
