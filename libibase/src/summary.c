@@ -407,7 +407,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     if(res->flag & IB_GROUPBY_DOUBLE)
                     {
                         p += sprintf(p, "\"%f\":\"%lld\",",
-                                IB_LONG2FLOAT(res->groups[i].val), IBLL(res->groups[i].val));
+                                IB_LONG2FLOAT(res->groups[i].key), IBLL(res->groups[i].val));
                     }
                     else
                     {
