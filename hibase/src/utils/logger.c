@@ -182,7 +182,7 @@ int logger_write(LOGGER *logger, int level, char *_file_, int _line_, char *form
         va_start(ap, format);
         s += vsnprintf(s, LOGGER_LINE_LIMIT - (s - buf), format, ap);
         va_end(ap);
-        *s++ = '\r';
+        //*s++ = '\r';
         *s++ = '\n';
         //if(logger->fd > 0) ret = pwrite(logger->fd, buf, s - buf, (off_t)0);
         MUTEX_LOCK(logger->mutex);
